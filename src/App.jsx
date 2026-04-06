@@ -9671,7 +9671,6 @@ export default function App() {
                 fontWeight: 700,
               }}
             >
-              ● 프로토타입
             </div>
           </div>
         </div>
