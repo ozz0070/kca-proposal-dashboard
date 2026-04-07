@@ -60,154 +60,7 @@ const MONTHS = [
 const DEFAULT_MEMBERS = [
   { id: "snchoi", pw: "1234", name: "최성남", role: "관리자" },
 ];
-const DEFAULT_CLIENTS = [
-  "행정안전부",
-  "과학기술정보통신부",
-  "기획재정부",
-  "교육부",
-  "법무부",
-  "외교부",
-  "통일부",
-  "국토교통부",
-  "보건복지부",
-  "환경부",
-  "고용노동부",
-  "농림축산식품부",
-  "산업통상자원부",
-  "해양수산부",
-  "문화체육관광부",
-  "여성가족부",
-  "중소벤처기업부",
-  "국가보훈부",
-  "조달청",
-  "국세청",
-  "관세청",
-  "통계청",
-  "경찰청",
-  "소방청",
-  "산림청",
-  "특허청",
-  "기상청",
-  "문화재청",
-  "질병관리청",
-  "국회사무처",
-  "대법원(법원행정처)",
-  "헌법재판소",
-  "감사원",
-  "중앙선거관리위원회",
-  "한국지능정보사회진흥원(NIA)",
-  "국가정보자원관리원",
-  "한국교육학술정보원(KERIS)",
-  "한국전력공사(KEPCO)",
-  "한국수자원공사(K-water)",
-  "한국토지주택공사(LH)",
-  "한국도로공사",
-  "한국철도공사(KORAIL)",
-  "한국철도시설공단",
-  "인천국제공항공사",
-  "한국공항공사",
-  "한국가스공사",
-  "한국석유공사",
-  "한국광물자원공사",
-  "국민건강보험공단",
-  "국민연금공단",
-  "근로복지공단",
-  "한국산업안전보건공단",
-  "건강보험심사평가원",
-  "한국사회보장정보원",
-  "한국인터넷진흥원(KISA)",
-  "한국정보통신기술협회(TTA)",
-  "한국전자통신연구원(ETRI)",
-  "한국과학기술정보연구원(KISTI)",
-  "대한무역투자진흥공사(KOTRA)",
-  "한국관광공사",
-  "서울올림픽기념국민체육진흥공단(KSPO)",
-  "한국방송통신전파진흥원(KCA)",
-  "정보통신산업진흥원(NIPA)",
-  "한국정보화진흥원",
-  "한국환경공단",
-  "한국농어촌공사",
-  "한국마사회",
-  "한국조폐공사",
-  "우체국물류지원단",
-  "한국우편사업진흥원",
-  "한국재정정보원",
-  "사회보장정보원",
-  "한국부동산원",
-  "한국자산관리공사(KAMCO)",
-  "한국예탁결제원",
-  "한국감정원",
-  "대한법률구조공단",
-  "한국법제연구원",
-  "한국교육개발원(KEDI)",
-  "한국직업능력연구원",
-  "국립공원공단",
-  "서울특별시",
-  "부산광역시",
-  "대구광역시",
-  "인천광역시",
-  "광주광역시",
-  "대전광역시",
-  "울산광역시",
-  "세종특별자치시",
-  "경기도",
-  "강원특별자치도",
-  "충청북도",
-  "충청남도",
-  "전북특별자치도",
-  "전라남도",
-  "경상북도",
-  "경상남도",
-  "제주특별자치도",
-  "서울특별시교육청",
-  "한국교육과정평가원",
-  "한국장학재단",
-  "금융위원회",
-  "금융감독원",
-  "금융정보분석원(FIU)",
-  "한국은행",
-  "예금보험공사",
-  "금융보안원",
-  "한국거래소(KRX)",
-  "신용보증기금",
-  "기술보증기금",
-  "한국주택금융공사",
-  "한국투자공사(KIC)",
-  "서민금융진흥원",
-  "한국산업은행(KDB)",
-  "중소기업은행(IBK)",
-  "한국수출입은행",
-  "농협은행(NH)",
-  "수협은행",
-  "한국무역보험공사(K-SURE)",
-  "우체국금융개발원",
-  "한국정책금융공사",
-  "국방부",
-  "방위사업청",
-  "병무청",
-  "국군재정관리단",
-  "국방전산정보원(DISA)",
-  "국방과학연구소(ADD)",
-  "국군수송사령부",
-  "합동참모본부",
-  "육군본부",
-  "해군본부",
-  "공군본부",
-  "해병대사령부",
-  "육군군수사령부",
-  "해군군수사령부",
-  "공군군수사령부",
-  "해군항공사령부",
-  "국방대학교",
-  "육군사관학교",
-  "해군사관학교",
-  "공군사관학교",
-  "국군의무사령부",
-  "국방기술품질원",
-  "전쟁기념사업회",
-  "한국방위산업진흥회(KDIA)",
-  "국방기술진흥연구소",
-];
+const DEFAULT_CLIENTS = [];
 const TYPES = ["제안서", "발표"];
 const STATUS_OPTIONS = ["진행중", "수주", "실주", "취소"];
 const DEFAULT_KCA_DATA = {};
@@ -3354,14 +3207,14 @@ function DataEntryView({
 }
 
 // ─── Individual Stats View (개인별 실적) ───
-function IndividualStatsView({ records, members }) {
+function IndividualStatsView({ records, members, selectedYear }) {
   const [filterMonth, setFilterMonth] = useState("전체");
 
   const data = useMemo(() => {
     const filtered =
       filterMonth === "전체"
         ? records
-        : records.filter((r) => r.month === filterMonth);
+        : records.filter((r) => r.submitDate?.slice(0, 7) === `${selectedYear}-${filterMonth}`);
     return members.map((name) => {
       const mr = filtered.filter((r) => r.member === name);
       const ps = mr.filter((r) => r.type === "제안서");
@@ -3642,7 +3495,7 @@ function mergeTeamRecords(records) {
   }));
 }
 
-function TeamStatsView({ records }) {
+function TeamStatsView({ records, selectedYear }) {
   const [filterMonth, setFilterMonth] = useState("전체");
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -3650,7 +3503,7 @@ function TeamStatsView({ records }) {
   const filtered =
     filterMonth === "전체"
       ? records
-      : records.filter((r) => r.month === filterMonth);
+      : records.filter((r) => r.submitDate?.slice(0, 7) === `${selectedYear}-${filterMonth}`);
   const merged = useMemo(() => mergeTeamRecords(filtered), [filtered]);
   const term = searchTerm.trim().toLowerCase();
   const searched = term
@@ -3985,24 +3838,14 @@ function TeamStatsView({ records }) {
 }
 
 // ─── Monthly Stats View (팀 월별 실적) ───
-function MonthlyStatsView({ records, kcaData }) {
+function MonthlyStatsView({ records, kcaData, selectedYear }) {
   const merged = useMemo(() => mergeTeamRecords(records), [records]);
-  const primaryYear = useMemo(() => {
-    const years = {};
-    records.forEach((r) => {
-      const y = r.date?.slice(0, 4);
-      if (y) years[y] = (years[y] || 0) + 1;
-    });
-    return (
-      Object.entries(years).sort((a, b) => b[1] - a[1])[0]?.[0] ||
-      new Date().getFullYear().toString()
-    );
-  }, [records]);
+  const primaryYear = selectedYear || new Date().getFullYear().toString();
   const kcaTotal = kcaData[primaryYear] || 0;
 
   const monthlyData = useMemo(() => {
     const rows = MONTHS.map((m) => {
-      const mr = merged.filter((r) => r.month === m);
+      const mr = merged.filter((r) => r.submitDate?.slice(0, 7) === `${primaryYear}-${m}`);
       const ps = mr.filter((r) => r.mergedType.includes("제안서"));
       const pt = mr.filter((r) => r.mergedType.includes("발표"));
       const won = (a) => a.filter((r) => r.status === "수주");
@@ -9671,6 +9514,7 @@ export default function App() {
                 fontWeight: 700,
               }}
             >
+              KCA
             </div>
           </div>
         </div>
@@ -9690,11 +9534,11 @@ export default function App() {
           />
         )}
         {view === "individual" && (
-          <IndividualStatsView records={yearRecords} members={memberNames} />
+          <IndividualStatsView records={yearRecords} members={memberNames} selectedYear={selectedYear} />
         )}
-        {view === "teamstats" && <TeamStatsView records={yearRecords} />}
+        {view === "teamstats" && <TeamStatsView records={yearRecords} selectedYear={selectedYear} />}
         {view === "monthlystats" && (
-          <MonthlyStatsView records={yearRecords} kcaData={kcaData} />
+          <MonthlyStatsView records={yearRecords} kcaData={kcaData} selectedYear={selectedYear} />
         )}
         {view === "report" && (
           <ReportView stats={stats} records={yearRecords} kcaData={kcaData} />
