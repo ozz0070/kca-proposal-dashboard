@@ -458,7 +458,7 @@ function Input({
   );
 }
 
-function SubmitDateInput({ value, onChange, style }) {
+function SubmitDateInput({ value, onChange, style, required }) {
   const isPreAnnounce = value === "사전공고";
   const mode = isPreAnnounce || !value ? "사전공고" : "날짜";
   const radioStyle = (active) => ({
@@ -487,6 +487,7 @@ function SubmitDateInput({ value, onChange, style }) {
         }}
       >
         제출일
+        {required && <span style={{ color: ACCENT.red }}> *</span>}
       </label>
       <div
         style={{
@@ -1237,7 +1238,13 @@ function RecordDetail({
   onNavigateToClients,
 }) {
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ ...record });
+  const toDateStr = (d) => (d ? String(d).slice(0, 10) : "");
+  const normalizeRecord = (r) => ({
+    ...r,
+    date: toDateStr(r.date),
+    submitDate: r.submitDate ? String(r.submitDate).slice(0, 10) : "",
+  });
+  const [form, setForm] = useState(normalizeRecord(record));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showStatusConfirm, setShowStatusConfirm] = useState(null);
@@ -1272,26 +1279,16 @@ function RecordDetail({
   };
 
   const trySave = () => {
-    const needsDetail = form.status === "수주" || form.status === "실주";
-    const hasDate =
-      form.submitDate &&
-      form.submitDate !== "사전공고" &&
-      form.submitDate.trim() !== "";
-    const hasLeader = form.leader && form.leader.trim() !== "";
-    if (needsDetail && !hasDate && !hasLeader) {
-      setWarning(
-        "수주 또는 실주 상태에서는 총괄과 제출일 날짜를 반드시 입력해야 합니다.",
-      );
-      return;
-    }
-    if (needsDetail && !hasLeader) {
-      setWarning("수주 또는 실주 상태에서는 총괄을 반드시 입력해야 합니다.");
-      return;
-    }
-    if (needsDetail && !hasDate) {
-      setWarning(
-        "수주 또는 실주 상태에서는 제출일 날짜를 반드시 입력해야 합니다.",
-      );
+    const missing = [];
+    const isWonLost = form.status === "수주" || form.status === "실주";
+    if (!form.member) missing.push("담당자");
+    if (isWonLost && !form.leader) missing.push("총괄");
+    if (!form.client) missing.push("발주기관");
+    if (!form.project) missing.push("프로젝트명");
+    if (!form.amount && form.amount !== 0) missing.push("금액(억)");
+    if (isWonLost && (!form.submitDate || form.submitDate === "사전공고")) missing.push("제출일");
+    if (missing.length > 0) {
+      setWarning(`${missing.join(", ")}을(를) 입력해주세요.`);
       return;
     }
     setWarning("");
@@ -1941,6 +1938,7 @@ function RecordDetail({
                   }))
                 }
                 options={members}
+                required
               />
               <Select
                 label="유형"
@@ -1959,6 +1957,7 @@ function RecordDetail({
                 value={form.leader || ""}
                 onChange={(v) => setForm((p) => ({ ...p, leader: v }))}
                 placeholder="감리 총괄"
+                required={form.status === "수주" || form.status === "실주"}
               />
               <Select
                 label="상태"
@@ -1973,6 +1972,7 @@ function RecordDetail({
                 onChange={(v) => setForm((p) => ({ ...p, client: v }))}
                 clients={clients}
                 onNavigateToClients={onNavigateToClients}
+                required
               />
               <Input
                 label="프로젝트명"
@@ -1985,10 +1985,12 @@ function RecordDetail({
                 type="number"
                 value={form.amount}
                 onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
+                required
               />
               <SubmitDateInput
                 value={form.submitDate || "사전공고"}
                 onChange={(v) => setForm((p) => ({ ...p, submitDate: v }))}
+                required={form.status === "수주" || form.status === "실주"}
               />
               <div style={{ gridColumn: "span 2" }}>
                 <TagInput
@@ -2062,7 +2064,7 @@ function RecordDetail({
             >
               <button
                 onClick={() => {
-                  setForm({ ...record });
+                  setForm(normalizeRecord(record));
                   setEditing(false);
                   setWarning("");
                 }}
@@ -2262,10 +2264,13 @@ function DataEntryView({
 
   const handleSubmit = () => {
     const missing = [];
+    const isWonLost = form.status === "수주" || form.status === "실주";
     if (!form.member) missing.push("담당자");
+    if (isWonLost && !form.leader) missing.push("총괄");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
     if (!form.amount && form.amount !== 0) missing.push("금액(억)");
+    if (isWonLost && (!form.submitDate || form.submitDate === "사전공고")) missing.push("제출일");
     if (missing.length > 0) {
       setFormWarning(`${missing.join(", ")}을(를) 입력해주세요.`);
       return;
@@ -2521,6 +2526,7 @@ function DataEntryView({
                 { value: "", label: "-- 선택 --" },
                 ...members.map((m) => ({ value: m, label: m })),
               ]}
+              required
             />
             <Select
               label="유형"
@@ -2564,6 +2570,7 @@ function DataEntryView({
                 value={form.leader}
                 onChange={(v) => setForm((p) => ({ ...p, leader: v }))}
                 placeholder="감리 총괄"
+                required={form.status === "수주" || form.status === "실주"}
               />
             )}
             {copyMode ? (
@@ -2628,6 +2635,7 @@ function DataEntryView({
                 onChange={(v) => setForm((p) => ({ ...p, client: v }))}
                 clients={clients}
                 onNavigateToClients={onNavigateToClients}
+                required
               />
             )}
             {copyMode ? (
@@ -2732,6 +2740,7 @@ function DataEntryView({
               <SubmitDateInput
                 value={form.submitDate}
                 onChange={(v) => setForm((p) => ({ ...p, submitDate: v }))}
+                required={form.status === "수주" || form.status === "실주"}
               />
             )}
             {copyMode ? (
