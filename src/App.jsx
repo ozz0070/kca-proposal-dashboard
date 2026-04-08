@@ -4236,7 +4236,8 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
 }
 
 // ─── Report View ───
-function ReportView({ stats, records, kcaData }) {
+function ReportView({ stats, records, kcaData, members }) {
+  const merged = useMemo(() => mergeTeamRecords(records), [records]);
   const primaryYear = useMemo(() => {
     const years = {};
     records.forEach((r) => {
@@ -4249,6 +4250,11 @@ function ReportView({ stats, records, kcaData }) {
     );
   }, [records]);
   const kcaTotal = kcaData[primaryYear] || 0;
+  const total = merged.length;
+  const totalWon = merged.filter((r) => r.status === "수주").length;
+  const totalDone = merged.filter((r) => r.status === "수주" || r.status === "실주").length;
+  const totalAmt = merged.filter((r) => r.status === "수주").reduce((s, r) => s + (r.amount || 0), 0);
+  const viewerNames = members ? members.filter((m) => m.role === "뷰어").map((m) => m.name) : [];
   const today = new Date().toLocaleDateString("ko-KR", {
     year: "numeric",
     month: "long",
@@ -4349,23 +4355,24 @@ function ReportView({ stats, records, kcaData }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: "repeat(5, 1fr)",
             gap: 16,
             marginBottom: 32,
           }}
         >
           {[
-            { label: "총 건수", value: stats.total, unit: "건" },
-            { label: "수주 건수", value: stats.totalWon, unit: "건" },
+            { label: "팀 제안 건수", value: total, unit: "건" },
+            { label: "평가완료 건수", value: totalDone, unit: "건" },
+            { label: "팀 수주 건수", value: totalWon, unit: "건" },
             {
-              label: "수주율",
+              label: "팀 수주율",
               value:
-                stats.totalDone > 0
-                  ? `${((stats.totalWon / stats.totalDone) * 100).toFixed(1)}`
+                totalDone > 0
+                  ? `${((totalWon / totalDone) * 100).toFixed(1)}`
                   : "N/A",
-              unit: stats.totalDone > 0 ? "%" : "",
+              unit: totalDone > 0 ? "%" : "",
             },
-            { label: "수주금액", value: fmt(stats.totalAmt), unit: "억" },
+            { label: "팀 수주금액", value: fmt(totalAmt), unit: "억" },
           ].map((k, i) => (
             <div
               key={i}
@@ -4433,7 +4440,7 @@ function ReportView({ stats, records, kcaData }) {
             </tr>
           </thead>
           <tbody>
-            {stats.individual.map((m, i) => (
+            {stats.individual.filter((m) => !viewerNames.includes(m.name)).map((m, i) => (
               <tr
                 key={m.name}
                 style={{ background: i % 2 === 0 ? "white" : NAVY[50] + "50" }}
@@ -8855,6 +8862,7 @@ export default function App() {
   );
 
   const memberNames = useMemo(() => members.map((m) => m.name), [members]);
+  const activeMemberNames = useMemo(() => members.filter((m) => m.role !== "뷰어").map((m) => m.name), [members]);
 
   const yearRecords = useMemo(
     () => records.filter((r) => r.date?.slice(0, 4) === selectedYear),
@@ -9604,21 +9612,21 @@ export default function App() {
             onAdd={addRecord}
             onDelete={deleteRecord}
             onUpdate={updateRecord}
-            members={memberNames}
+            members={activeMemberNames}
             clients={clients}
             onNavigateToClients={() => setView("clients")}
             currentUser={currentUser}
           />
         )}
         {view === "individual" && (
-          <IndividualStatsView records={yearRecords} members={memberNames} selectedYear={selectedYear} />
+          <IndividualStatsView records={yearRecords} members={activeMemberNames} selectedYear={selectedYear} />
         )}
         {view === "teamstats" && <TeamStatsView records={yearRecords} selectedYear={selectedYear} />}
         {view === "monthlystats" && (
           <MonthlyStatsView records={yearRecords} kcaData={kcaData} selectedYear={selectedYear} />
         )}
         {view === "report" && (
-          <ReportView stats={stats} records={yearRecords} kcaData={kcaData} />
+          <ReportView stats={stats} records={yearRecords} kcaData={kcaData} members={members} />
         )}
         {view === "review" && (
           <ReviewView
