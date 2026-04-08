@@ -101,6 +101,7 @@ const API_URL =
   "https://script.google.com/macros/s/AKfycbw0Y8YWL-d5O1msLnKA9UMACTfsgXrMd9vs1yFc68VUJr6Z-ySFIa37TsUrVXhK936b/exec";
 
 let useAPI = false; // 구글시트 API 사용 가능 여부
+const apiLoadSuccess = new Set(); // API 로드 성공한 액션 추적 (엔드포인트별)
 
 async function apiGet(action) {
   try {
@@ -110,6 +111,7 @@ async function apiGet(action) {
     const data = await res.json();
     if (data && !data.error) {
       useAPI = true;
+      apiLoadSuccess.add(action);
       return data;
     }
     return null;
@@ -180,28 +182,29 @@ async function loadSchedules() {
 }
 
 // ─── Save 함수 (API + localStorage 동시 저장) ───
+// 해당 워크시트의 API 로드가 성공했을 때만 API에 저장 (다른 엔드포인트만 성공한 경우 폴백 데이터 덮어쓰기 방지)
 async function saveRecords(records) {
-  apiPost("setRecords", records);
+  if (apiLoadSuccess.has("getRecords")) apiPost("setRecords", records);
   storageSet("kca-records-v1", records);
 }
 async function saveMembers(members) {
-  apiPost("setMembers", members);
+  if (apiLoadSuccess.has("getMembers")) apiPost("setMembers", members);
   storageSet("kca-members-v1", members);
 }
 async function saveClients(clients) {
-  apiPost("setClients", clients);
+  if (apiLoadSuccess.has("getClients")) apiPost("setClients", clients);
   storageSet("kca-clients-v1", clients);
 }
 async function saveKcaTotal(data) {
-  apiPost("setKcaData", data);
+  if (apiLoadSuccess.has("getKcaData")) apiPost("setKcaData", data);
   storageSet("kca-kcadata-v1", data);
 }
 async function saveReviews(reviews) {
-  apiPost("setReviews", reviews);
+  if (apiLoadSuccess.has("getReviews")) apiPost("setReviews", reviews);
   storageSet("kca-reviews-v1", reviews);
 }
 async function saveSchedules(schedules) {
-  apiPost("setSchedules", schedules);
+  if (apiLoadSuccess.has("getSchedules")) apiPost("setSchedules", schedules);
   storageSet("kca-schedules-v1", schedules);
 }
 
