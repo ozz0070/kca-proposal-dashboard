@@ -102,6 +102,7 @@ const API_URL =
 
 let useAPI = false; // 구글시트 API 사용 가능 여부
 const apiLoadSuccess = new Set(); // API 로드 성공한 액션 추적 (엔드포인트별)
+let loadedRecordsCount = -1; // API에서 로드된 레코드 수 (-1: 미로드)
 
 async function apiGet(action) {
   try {
@@ -146,9 +147,14 @@ function storageSet(key, val) {
 // ─── Load 함수 (API 우선, 실패 시 localStorage) ───
 async function loadRecords() {
   const r = await apiGet("getRecords");
-  if (r && Array.isArray(r)) return r;
+  if (r && Array.isArray(r) && r.length > 0) {
+    loadedRecordsCount = r.length;
+    return r;
+  }
   const s = await storageGet("kca-records-v1");
-  return s || INITIAL_RECORDS;
+  const result = (s && s.length > 0 ? s : null) || INITIAL_RECORDS;
+  loadedRecordsCount = result.length;
+  return result;
 }
 async function loadMembers() {
   const r = await apiGet("getMembers");
@@ -184,7 +190,12 @@ async function loadSchedules() {
 // ─── Save 함수 (API + localStorage 동시 저장) ───
 // 해당 워크시트의 API 로드가 성공했을 때만 API에 저장 (다른 엔드포인트만 성공한 경우 폴백 데이터 덮어쓰기 방지)
 async function saveRecords(records) {
-  if (apiLoadSuccess.has("getRecords")) apiPost("setRecords", records);
+  if (apiLoadSuccess.has("getRecords")) {
+    // 안전장치: 로드된 데이터가 있는데 빈 배열로 덮어쓰기 방지
+    if (records.length > 0 || loadedRecordsCount === 0) {
+      apiPost("setRecords", records);
+    }
+  }
   storageSet("kca-records-v1", records);
 }
 async function saveMembers(members) {
@@ -3243,7 +3254,11 @@ function IndividualStatsView({ records, members, selectedYear }) {
     const filtered =
       filterMonth === "전체"
         ? records
-        : records.filter((r) => r.submitDate?.slice(0, 7) === `${selectedYear}-${filterMonth}`);
+        : records.filter((r) =>
+            r.status === "수주" || r.status === "실주"
+              ? r.submitDate?.slice(0, 7) === `${selectedYear}-${filterMonth}`
+              : r.month === filterMonth
+          );
     return members.map((name) => {
       const mr = filtered.filter((r) => r.member === name);
       const ps = mr.filter((r) => r.type === "제안서");
@@ -3532,7 +3547,11 @@ function TeamStatsView({ records, selectedYear }) {
   const filtered =
     filterMonth === "전체"
       ? records
-      : records.filter((r) => r.submitDate?.slice(0, 7) === `${selectedYear}-${filterMonth}`);
+      : records.filter((r) =>
+          r.status === "수주" || r.status === "실주"
+            ? r.submitDate?.slice(0, 7) === `${selectedYear}-${filterMonth}`
+            : r.month === filterMonth
+        );
   const merged = useMemo(() => mergeTeamRecords(filtered), [filtered]);
   const term = searchTerm.trim().toLowerCase();
   const searched = term
@@ -3874,7 +3893,11 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
 
   const monthlyData = useMemo(() => {
     const rows = MONTHS.map((m) => {
-      const mr = merged.filter((r) => r.submitDate?.slice(0, 7) === `${primaryYear}-${m}`);
+      const mr = merged.filter((r) =>
+        r.status === "수주" || r.status === "실주"
+          ? r.submitDate?.slice(0, 7) === `${primaryYear}-${m}`
+          : r.month === m
+      );
       const ps = mr.filter((r) => r.mergedType.includes("제안서"));
       const pt = mr.filter((r) => r.mergedType.includes("발표"));
       const won = (a) => a.filter((r) => r.status === "수주");
