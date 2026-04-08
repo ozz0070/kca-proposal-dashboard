@@ -1249,7 +1249,7 @@ function RecordDetail({
   onNavigateToClients,
   currentUser,
 }) {
-  const canEdit = currentUser?.role === "관리자" || currentUser?.name === record.member;
+  const canEdit = currentUser?.role !== "뷰어" && (currentUser?.role === "관리자" || currentUser?.name === record.member);
   const [editing, setEditing] = useState(false);
   const toDateStr = (d) => (d ? String(d).slice(0, 10) : "");
   const normalizeRecord = (r) => ({
@@ -1819,7 +1819,7 @@ function RecordDetail({
             <Pencil size={16} />
           </button>
           )}
-          <button
+          {currentUser?.role !== "뷰어" && <button
             onClick={() => onCopy(record)}
             style={{
               background: "rgba(255,255,255,0.15)",
@@ -1832,8 +1832,8 @@ function RecordDetail({
             }}
           >
             <Copy size={16} />
-          </button>
-          <button
+          </button>}
+          {canEdit && <button
             onClick={() => setShowDeleteConfirm(true)}
             style={{
               background: "rgba(239,68,68,0.3)",
@@ -1846,7 +1846,7 @@ function RecordDetail({
             }}
           >
             <Trash2 size={16} />
-          </button>
+          </button>}
         </div>
         {/* Quick Status Change */}
         {canEdit && record.status === "진행중" && <div
@@ -2362,7 +2362,7 @@ function DataEntryView({
             총 {records.length}건 등록
           </p>
         </div>
-        <button
+        {currentUser?.role !== "뷰어" && <button
           onClick={() => setShowForm(!showForm)}
           style={{
             display: "flex",
@@ -2381,7 +2381,7 @@ function DataEntryView({
         >
           {showForm ? <X size={16} /> : <PlusCircle size={16} />}
           {showForm ? "닫기" : "새 건 등록"}
-        </button>
+        </button>}
       </div>
 
       {!showForm && (
@@ -3320,7 +3320,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
             개인별 수주율
           </h3>
           <p style={{ fontSize: 13, color: NAVY[300], marginTop: 2 }}>
-            제안팀 인력 {members.length}명
+            사용자 {members.length}명
           </p>
         </div>
         <Select
@@ -5057,10 +5057,13 @@ function ReviewDetail({
   clients,
   onCopy,
   currentUser,
+  onNavigateToClients,
 }) {
-  const canEdit = currentUser?.role === "관리자" || currentUser?.name === record.member;
+  const canEdit = currentUser?.role !== "뷰어" && (currentUser?.role === "관리자" || currentUser?.name === record.member);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ ...record });
+  const toDateStr = (d) => (d ? String(d).slice(0, 10) : "");
+  const normalizeRecord = (r) => ({ ...r, date: toDateStr(r.date) });
+  const [form, setForm] = useState(normalizeRecord(record));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [warning, setWarning] = useState("");
@@ -5383,7 +5386,7 @@ function ReviewDetail({
             <Pencil size={16} />
           </button>
           )}
-          <button
+          {currentUser?.role !== "뷰어" && <button
             onClick={() => onCopy(record)}
             style={{
               background: "rgba(255,255,255,0.15)",
@@ -5395,8 +5398,8 @@ function ReviewDetail({
             }}
           >
             <Copy size={16} />
-          </button>
-          <button
+          </button>}
+          {canEdit && <button
             onClick={() => setShowDeleteConfirm(true)}
             style={{
               background: "rgba(239,68,68,0.3)",
@@ -5408,7 +5411,7 @@ function ReviewDetail({
             }}
           >
             <Trash2 size={16} />
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -5464,12 +5467,13 @@ function ReviewDetail({
                 value={form.amount}
                 onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
               />
-              <Select
+              <ClientSearchInput
                 label="발주기관"
                 required
                 value={form.client}
                 onChange={(v) => setForm((p) => ({ ...p, client: v }))}
-                options={clients}
+                clients={clients}
+                onNavigateToClients={onNavigateToClients}
               />
               <Input
                 label="프로젝트명"
@@ -5507,7 +5511,7 @@ function ReviewDetail({
             >
               <button
                 onClick={() => {
-                  setForm({ ...record });
+                  setForm(normalizeRecord(record));
                   setEditing(false);
                   setWarning("");
                 }}
@@ -5549,7 +5553,7 @@ function ReviewDetail({
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}
           >
             <Field label="날짜">
-              <FieldValue value={record.date} />
+              <FieldValue value={fmtDate(record.date)} />
             </Field>
             <Field label="담당자">
               <FieldValue value={record.member} />
@@ -5620,10 +5624,10 @@ function ReviewDetail({
 }
 
 // ─── Review View (제안서 리뷰) ───
-function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, currentUser }) {
+function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, currentUser, onNavigateToClients }) {
   const empty = {
     date: new Date().toISOString().slice(0, 10),
-    member: "",
+    member: currentUser?.name || "",
     type: REVIEW_TYPES[0],
     author: "",
     leader: "",
@@ -5697,6 +5701,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
             setPage(1);
           }}
           currentUser={currentUser}
+          onNavigateToClients={onNavigateToClients}
         />
       </div>
     );
@@ -5722,7 +5727,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
             총 {records.length}건 등록
           </p>
         </div>
-        <button
+        {currentUser?.role !== "뷰어" && <button
           onClick={() => setShowForm(!showForm)}
           style={{
             display: "flex",
@@ -5740,7 +5745,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
         >
           {showForm ? <X size={16} /> : <PlusCircle size={16} />}
           {showForm ? "닫기" : "새 건 등록"}
-        </button>
+        </button>}
       </div>
 
       {!showForm && (
@@ -6014,15 +6019,13 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                 </p>
               </div>
             ) : (
-              <Select
+              <ClientSearchInput
                 label="발주기관"
                 required
                 value={form.client}
                 onChange={(v) => setForm((p) => ({ ...p, client: v }))}
-                options={[
-                  { value: "", label: "-- 선택 --" },
-                  ...clients.map((c) => ({ value: c, label: c })),
-                ]}
+                clients={clients}
+                onNavigateToClients={onNavigateToClients}
               />
             )}
             {copyMode ? (
@@ -6232,7 +6235,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                     <span
                       style={{ fontSize: 12, color: NAVY[300], flexShrink: 0 }}
                     >
-                      {r.date}
+                      {fmtDate(r.date)}
                     </span>
                     <p
                       style={{
@@ -6411,6 +6414,7 @@ function ScheduleView({ schedules, onAdd, onDelete, onUpdate, currentUser }) {
   };
 
   const handleDayClick = (dateStr) => {
+    if (currentUser.role === "뷰어") return;
     if (!selectStart || (selectStart && selectEnd)) {
       setSelectStart(dateStr);
       setSelectEnd(null);
@@ -7399,7 +7403,7 @@ function ScheduleView({ schedules, onAdd, onDelete, onUpdate, currentUser }) {
                   >
                     닫기
                   </button>
-                  {selectedSched.authorId === currentUser.id && (
+                  {currentUser.role !== "뷰어" && selectedSched.authorId === currentUser.id && (
                     <>
                       <button
                         onClick={() => {
@@ -8218,7 +8222,7 @@ function TeamMemberListView({ members, onUpdate }) {
     <div style={{ maxWidth: 700 }}>
       <div style={{ marginBottom: 20 }}>
         <h3 style={{ fontSize: 18, fontWeight: 700, color: NAVY[700] }}>
-          제안팀 인력
+          사용자
         </h3>
         <p style={{ fontSize: 13, color: NAVY[300], marginTop: 2 }}>
           총 {members.length}명
@@ -8351,6 +8355,7 @@ function TeamMemberListView({ members, onUpdate }) {
           }}
         >
           <option value="사용자">사용자</option>
+          <option value="뷰어">뷰어</option>
           <option value="관리자">관리자</option>
         </select>
         <button
@@ -8473,6 +8478,7 @@ function TeamMemberListView({ members, onUpdate }) {
                     }}
                   >
                     <option value="사용자">사용자</option>
+                    <option value="뷰어">뷰어</option>
                     <option value="관리자">관리자</option>
                   </select>
                   <button
@@ -8972,7 +8978,7 @@ export default function App() {
     view === "team" || view === "clients" || view === "kcasetting";
   const viewLabel =
     view === "team"
-      ? "제안팀 인력"
+      ? "사용자"
       : view === "clients"
         ? "발주기관"
         : view === "kcasetting"
@@ -9109,7 +9115,7 @@ export default function App() {
         </div>
 
         {/* 설정 영역 */}
-        <div
+        {currentUser.role !== "뷰어" && <div
           style={{ padding: "8px 12px", borderTop: `1px solid ${NAVY[600]}` }}
         >
           <button
@@ -9153,7 +9159,7 @@ export default function App() {
           {(settingsOpen || isSettings) && (
             <div style={{ marginTop: 4 }}>
               {currentUser.role === "관리자" &&
-                settingsSubBtn("team", <Users size={14} />, "제안팀 인력")}
+                settingsSubBtn("team", <Users size={14} />, "사용자")}
               {settingsSubBtn("clients", <Building2 size={14} />, "발주기관")}
               {currentUser.role === "관리자" &&
                 settingsSubBtn(
@@ -9163,7 +9169,7 @@ export default function App() {
                 )}
             </div>
           )}
-        </div>
+        </div>}
 
         <div
           style={{ padding: "12px 16px", borderTop: `1px solid ${NAVY[600]}` }}
@@ -9584,6 +9590,7 @@ export default function App() {
             members={memberNames}
             clients={clients}
             currentUser={currentUser}
+            onNavigateToClients={() => setView("clients")}
           />
         )}
         {view === "schedule" && (

@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx --yes acorn --ecma2020 --module src/App.jsx)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)",
+      "Bash(sed -i '1836s/          <button$/          {canEdit \\\\&\\\\& <button/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '1849s/          <\\\\/button>$/          <\\\\/button>}/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '2365s/        <button$/        {currentUser?.role !== \"뷰어\" \\\\&\\\\& <button/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '2384s/        <\\\\/button>$/        <\\\\/button>}/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '5725s/        <button$/        {currentUser?.role !== \"뷰어\" \\\\&\\\\& <button/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '5743s/        <\\\\/button>$/        <\\\\/button>}/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '5399s/          <button$/          {canEdit \\\\&\\\\& <button/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '5411s/          <\\\\/button>$/          <\\\\/button>}/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '1822s/          <button$/          {currentUser?.role !== \"뷰어\" \\\\&\\\\& <button/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '1835s/          <\\\\/button>$/          <\\\\/button>}/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '5387s/          <button$/          {currentUser?.role !== \"뷰어\" \\\\&\\\\& <button/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '5400s/          <\\\\/button>$/          <\\\\/button>}/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -n '6005,6030p' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -n '5870,5920p' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '6236s/{r\\\\.date}/{fmtDate\\(r.date\\)}/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '5554s/value={record\\\\.date}/value={fmtDate\\(record.date\\)}/' c:/projects/kca-proposal-dashboard/src/App.jsx)"
+    ]
+  }
+}
