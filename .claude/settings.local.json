@@ -24,7 +24,9 @@
       "Bash(sed -n '3269,3275p' c:/projects/kca-proposal-dashboard/src/App.jsx)",
       "Bash(sed -n '3562,3568p' c:/projects/kca-proposal-dashboard/src/App.jsx)",
       "Bash(sed -n '6175,6181p' c:/projects/kca-proposal-dashboard/src/App.jsx)",
-      "Bash(sed -n '1158,1165p' c:/projects/kca-proposal-dashboard/src/App.jsx)"
+      "Bash(sed -n '1158,1165p' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '6483s/task: task.trim\\(\\) || \"휴가\",/task: task.trim\\(\\),/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(sed -i '6524s/task: editForm.task.trim\\(\\) || \"휴가\",/task: editForm.task.trim\\(\\),/' c:/projects/kca-proposal-dashboard/src/App.jsx)"
     ]
   }
 }

@@ -221,22 +221,19 @@ async function saveSchedules(schedules) {
 
 // ─── Stats Computation ───
 function computeStats(records, filterMonth, members) {
+  const todayMonth = new Date().toISOString().slice(5, 7);
+  const getMonth = (r) =>
+    r.status === "수주" || r.status === "실주" ? r.submitDate?.slice(5, 7)
+    : r.status === "진행중" ? todayMonth
+    : r.date?.slice(5, 7);
   const filtered =
     filterMonth === "전체"
       ? records
-      : records.filter((r) =>
-          r.status === "수주" || r.status === "실주"
-            ? r.submitDate?.slice(5, 7) === filterMonth
-            : r.date?.slice(5, 7) === filterMonth
-        );
+      : records.filter((r) => getMonth(r) === filterMonth);
 
   // Monthly stats
   const monthly = MONTHS.map((m) => {
-    const mr = records.filter((r) =>
-      r.status === "수주" || r.status === "실주"
-        ? r.submitDate?.slice(5, 7) === m
-        : r.date?.slice(5, 7) === m
-    );
+    const mr = records.filter((r) => getMonth(r) === m);
     const ps = mr.filter((r) => r.type === "제안서");
     const pt = mr.filter((r) => r.type === "발표");
     const won = (arr) => arr.filter((r) => r.status === "수주");
@@ -1065,12 +1062,13 @@ function DashboardView({ records, kcaData }) {
           a.filter((r) => r.status === "수주" || r.status === "실주");
         const prog = (a) => a.filter((r) => r.status === "진행중");
         const amt = (a) => a.reduce((s, r) => s + (r.amount || 0), 0);
+        const todayMonth = new Date().toISOString().slice(5, 7);
+        const getMonth = (r) =>
+          r.status === "수주" || r.status === "실주" ? r.submitDate?.slice(5, 7)
+          : r.status === "진행중" ? todayMonth
+          : r.date?.slice(5, 7);
         const rows = MONTHS.map((m) => {
-          const mr = merged.filter((r) =>
-            r.status === "수주" || r.status === "실주"
-              ? r.submitDate?.slice(0, 7) === `${primaryYear}-${m}`
-              : r.date?.slice(5, 7) === m
-          );
+          const mr = merged.filter((r) => getMonth(r) === m);
           return {
             month: m,
             total: mr.length,
@@ -3263,14 +3261,15 @@ function IndividualStatsView({ records, members, selectedYear }) {
   const [filterMonth, setFilterMonth] = useState("전체");
 
   const data = useMemo(() => {
+    const todayMonth = new Date().toISOString().slice(5, 7);
+    const getMonth = (r) =>
+      r.status === "수주" || r.status === "실주" ? r.submitDate?.slice(5, 7)
+      : r.status === "진행중" ? todayMonth
+      : r.date?.slice(5, 7);
     const filtered =
       filterMonth === "전체"
         ? records
-        : records.filter((r) =>
-            r.status === "수주" || r.status === "실주"
-              ? r.submitDate?.slice(0, 7) === `${selectedYear}-${filterMonth}`
-              : r.date?.slice(5, 7) === filterMonth
-          );
+        : records.filter((r) => getMonth(r) === filterMonth);
     return members.map((name) => {
       const mr = filtered.filter((r) => r.member === name);
       const ps = mr.filter((r) => r.type === "제안서");
@@ -3904,12 +3903,13 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
   const kcaTotal = kcaData[primaryYear] || 0;
 
   const monthlyData = useMemo(() => {
+    const todayMonth = new Date().toISOString().slice(5, 7);
+    const getMonth = (r) =>
+      r.status === "수주" || r.status === "실주" ? r.submitDate?.slice(5, 7)
+      : r.status === "진행중" ? todayMonth
+      : r.date?.slice(5, 7);
     const rows = MONTHS.map((m) => {
-      const mr = merged.filter((r) =>
-        r.status === "수주" || r.status === "실주"
-          ? r.submitDate?.slice(0, 7) === `${primaryYear}-${m}`
-          : r.date?.slice(5, 7) === m
-      );
+      const mr = merged.filter((r) => getMonth(r) === m);
       const ps = mr.filter((r) => r.mergedType.includes("제안서"));
       const pt = mr.filter((r) => r.mergedType.includes("발표"));
       const won = (a) => a.filter((r) => r.status === "수주");
@@ -6480,7 +6480,7 @@ function ScheduleView({ schedules, onAdd, onDelete, onUpdate, currentUser }) {
       id: Date.now(),
       start: selectStart,
       end: selectEnd,
-      task: task.trim() || "휴가",
+      task: task.trim(),
       category,
       author: currentUser.name,
       authorId: currentUser.id,
@@ -6521,7 +6521,7 @@ function ScheduleView({ schedules, onAdd, onDelete, onUpdate, currentUser }) {
       ...selectedSched,
       start: s,
       end: e,
-      task: editForm.task.trim() || "휴가",
+      task: editForm.task.trim(),
       category: editForm.category,
     });
     setSelectedSched(null);
