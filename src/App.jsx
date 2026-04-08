@@ -40,6 +40,7 @@ import {
   ClipboardList,
   Search,
   ChevronLeft,
+  CheckCircle2,
 } from "lucide-react";
 
 // ─── Constants ───
@@ -93,6 +94,7 @@ const INITIAL_RECORDS = [];
 const fmt = (n) => n?.toFixed?.(2) ?? "0.00";
 const pct = (n, d) => (d > 0 ? `${((n / d) * 100).toFixed(1)}%` : "N/A");
 const fmtDate = (d) => (d ? String(d).slice(0, 10) : "");
+const fmtDateRange = (s, e) => { const ds = fmtDate(s); const de = fmtDate(e); return ds === de ? ds : `${ds} ~ ${de}`; };
 
 // ─── Google Apps Script API ───
 const API_URL =
@@ -1001,6 +1003,14 @@ function DashboardView({ records, kcaData }) {
           delay={0}
         />
         <KPICard
+          icon={CheckCircle2}
+          label="평가 완료 건수"
+          value={totalDone}
+          sub={`수주 ${totalWon}건 · 실주 ${totalDone - totalWon}건`}
+          color={ACCENT.purple}
+          delay={50}
+        />
+        <KPICard
           icon={Award}
           label="팀 수주 건수"
           value={totalWon}
@@ -1237,7 +1247,9 @@ function RecordDetail({
   clients,
   onCopy,
   onNavigateToClients,
+  currentUser,
 }) {
+  const canEdit = currentUser?.role === "관리자" || currentUser?.name === record.member;
   const [editing, setEditing] = useState(false);
   const toDateStr = (d) => (d ? String(d).slice(0, 10) : "");
   const normalizeRecord = (r) => ({
@@ -1791,6 +1803,7 @@ function RecordDetail({
             gap: 8,
           }}
         >
+          {canEdit && (
           <button
             onClick={() => setEditing(!editing)}
             style={{
@@ -1805,6 +1818,7 @@ function RecordDetail({
           >
             <Pencil size={16} />
           </button>
+          )}
           <button
             onClick={() => onCopy(record)}
             style={{
@@ -1835,7 +1849,7 @@ function RecordDetail({
           </button>
         </div>
         {/* Quick Status Change */}
-        <div
+        {canEdit && record.status === "진행중" && <div
           style={{
             display: "flex",
             flexDirection: "column",
@@ -1892,7 +1906,7 @@ function RecordDetail({
                 );
               })}
           </div>
-        </div>
+        </div>}
         {statusWarning && (
           <div
             style={{
@@ -2238,10 +2252,11 @@ function DataEntryView({
   members,
   clients,
   onNavigateToClients,
+  currentUser,
 }) {
   const empty = {
     date: new Date().toISOString().slice(0, 10),
-    member: "",
+    member: currentUser?.name || "",
     leader: "",
     type: TYPES[0],
     project: "",
@@ -2323,6 +2338,7 @@ function DataEntryView({
             setPage(1);
           }}
           onNavigateToClients={onNavigateToClients}
+          currentUser={currentUser}
         />
       </div>
     );
@@ -5040,7 +5056,9 @@ function ReviewDetail({
   members,
   clients,
   onCopy,
+  currentUser,
 }) {
+  const canEdit = currentUser?.role === "관리자" || currentUser?.name === record.member;
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...record });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -5350,6 +5368,7 @@ function ReviewDetail({
             gap: 8,
           }}
         >
+          {canEdit && (
           <button
             onClick={() => setEditing(!editing)}
             style={{
@@ -5363,6 +5382,7 @@ function ReviewDetail({
           >
             <Pencil size={16} />
           </button>
+          )}
           <button
             onClick={() => onCopy(record)}
             style={{
@@ -5600,7 +5620,7 @@ function ReviewDetail({
 }
 
 // ─── Review View (제안서 리뷰) ───
-function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients }) {
+function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, currentUser }) {
   const empty = {
     date: new Date().toISOString().slice(0, 10),
     member: "",
@@ -5676,6 +5696,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients }) {
             setShowForm(true);
             setPage(1);
           }}
+          currentUser={currentUser}
         />
       </div>
     );
@@ -6844,7 +6865,7 @@ function ScheduleView({ schedules, onAdd, onDelete, onUpdate, currentUser }) {
                         {s.task}
                       </p>
                       <p style={{ fontSize: 10, color: NAVY[300] }}>
-                        {s.start} ~ {s.end} · {s.author}
+                        {fmtDateRange(s.start, s.end)} · {s.author}
                       </p>
                     </div>
                   </div>
@@ -6901,7 +6922,7 @@ function ScheduleView({ schedules, onAdd, onDelete, onUpdate, currentUser }) {
                 <span style={{ fontWeight: 700 }}>{s.task}</span>
               </div>
               <p style={{ fontSize: 11, color: NAVY[200] }}>
-                {s.start} ~ {s.end}
+                {fmtDateRange(s.start, s.end)}
               </p>
               <p style={{ fontSize: 11, color: ACCENT.cyan }}>{s.author}</p>
             </div>
@@ -7346,7 +7367,7 @@ function ScheduleView({ schedules, onAdd, onDelete, onUpdate, currentUser }) {
                   </p>
                   <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
                     <p style={{ fontSize: 13, color: NAVY[400] }}>
-                      {selectedSched.start} ~ {selectedSched.end}
+                      {fmtDateRange(selectedSched.start, selectedSched.end)}
                     </p>
                     <p style={{ fontSize: 13, color: ACCENT.blue }}>
                       {selectedSched.author}
@@ -9541,6 +9562,7 @@ export default function App() {
             members={memberNames}
             clients={clients}
             onNavigateToClients={() => setView("clients")}
+            currentUser={currentUser}
           />
         )}
         {view === "individual" && (
@@ -9561,6 +9583,7 @@ export default function App() {
             onUpdate={updateReview}
             members={memberNames}
             clients={clients}
+            currentUser={currentUser}
           />
         )}
         {view === "schedule" && (
