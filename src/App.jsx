@@ -9176,6 +9176,7 @@ export default function App() {
         >
           <div
             onClick={() => {
+              if (currentUser.role === "뷰어") return;
               setShowPwChange(true);
               setPwForm({ old: "", new1: "", new2: "" });
               setPwMsg({ text: "", ok: false });
