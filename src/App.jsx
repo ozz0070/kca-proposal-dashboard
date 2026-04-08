@@ -224,11 +224,19 @@ function computeStats(records, filterMonth, members) {
   const filtered =
     filterMonth === "전체"
       ? records
-      : records.filter((r) => r.month === filterMonth);
+      : records.filter((r) =>
+          r.status === "수주" || r.status === "실주"
+            ? r.submitDate?.slice(5, 7) === filterMonth
+            : r.date?.slice(5, 7) === filterMonth
+        );
 
   // Monthly stats
   const monthly = MONTHS.map((m) => {
-    const mr = records.filter((r) => r.month === m);
+    const mr = records.filter((r) =>
+      r.status === "수주" || r.status === "실주"
+        ? r.submitDate?.slice(5, 7) === m
+        : r.date?.slice(5, 7) === m
+    );
     const ps = mr.filter((r) => r.type === "제안서");
     const pt = mr.filter((r) => r.type === "발표");
     const won = (arr) => arr.filter((r) => r.status === "수주");
@@ -1058,7 +1066,11 @@ function DashboardView({ records, kcaData }) {
         const prog = (a) => a.filter((r) => r.status === "진행중");
         const amt = (a) => a.reduce((s, r) => s + (r.amount || 0), 0);
         const rows = MONTHS.map((m) => {
-          const mr = merged.filter((r) => r.month === m);
+          const mr = merged.filter((r) =>
+            r.status === "수주" || r.status === "실주"
+              ? r.submitDate?.slice(0, 7) === `${primaryYear}-${m}`
+              : r.date?.slice(5, 7) === m
+          );
           return {
             month: m,
             total: mr.length,
@@ -1146,7 +1158,7 @@ function DashboardView({ records, kcaData }) {
             ? []
             : primaryYear < currentYear
               ? merged
-              : merged.filter((r) => r.month <= currentMonth);
+              : merged.filter((r) => { const em = r.status === "수주" || r.status === "실주" ? r.submitDate?.slice(5, 7) : r.date?.slice(5, 7); return em && em <= currentMonth; });
         const vDone = visibleMerged.filter(
           (r) => r.status === "수주" || r.status === "실주",
         ).length;
@@ -2935,7 +2947,7 @@ function DataEntryView({
           const monthFiltered =
             filterMonth === "전체"
               ? records
-              : records.filter((r) => r.month === filterMonth);
+              : records.filter((r) => r.status === "수주" || r.status === "실주" ? r.submitDate?.slice(5, 7) === filterMonth : r.date?.slice(5, 7) === filterMonth);
           const term = searchTerm.trim().toLowerCase();
           const filtered = term
             ? monthFiltered.filter(
@@ -3257,7 +3269,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
         : records.filter((r) =>
             r.status === "수주" || r.status === "실주"
               ? r.submitDate?.slice(0, 7) === `${selectedYear}-${filterMonth}`
-              : r.month === filterMonth
+              : r.date?.slice(5, 7) === filterMonth
           );
     return members.map((name) => {
       const mr = filtered.filter((r) => r.member === name);
@@ -3550,7 +3562,7 @@ function TeamStatsView({ records, selectedYear }) {
       : records.filter((r) =>
           r.status === "수주" || r.status === "실주"
             ? r.submitDate?.slice(0, 7) === `${selectedYear}-${filterMonth}`
-            : r.month === filterMonth
+            : r.date?.slice(5, 7) === filterMonth
         );
   const merged = useMemo(() => mergeTeamRecords(filtered), [filtered]);
   const term = searchTerm.trim().toLowerCase();
@@ -3896,7 +3908,7 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
       const mr = merged.filter((r) =>
         r.status === "수주" || r.status === "실주"
           ? r.submitDate?.slice(0, 7) === `${primaryYear}-${m}`
-          : r.month === m
+          : r.date?.slice(5, 7) === m
       );
       const ps = mr.filter((r) => r.mergedType.includes("제안서"));
       const pt = mr.filter((r) => r.mergedType.includes("발표"));
@@ -6163,7 +6175,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
           const monthFiltered =
             filterMonth === "전체"
               ? records
-              : records.filter((r) => r.month === filterMonth);
+              : records.filter((r) => r.date?.slice(5, 7) === filterMonth);
           const term = searchTerm.trim().toLowerCase();
           const filtered = term
             ? monthFiltered.filter(
