@@ -92,6 +92,7 @@ const INITIAL_RECORDS = [];
 // ─── Utility ───
 const fmt = (n) => n?.toFixed?.(2) ?? "0.00";
 const pct = (n, d) => (d > 0 ? `${((n / d) * 100).toFixed(1)}%` : "N/A");
+const fmtDate = (d) => (d ? String(d).slice(0, 10) : "");
 
 // ─── Google Apps Script API ───
 const API_URL =
@@ -2111,7 +2112,7 @@ function RecordDetail({
               }}
             >
               <Field label="배정일">
-                <FieldValue value={record.date} />
+                <FieldValue value={fmtDate(record.date)} />
               </Field>
               <Field label="담당자">
                 <FieldValue value={record.member} />
@@ -2155,7 +2156,7 @@ function RecordDetail({
                 </p>
               </Field>
               <Field label="제출일">
-                <FieldValue value={record.submitDate || "—"} />
+                <FieldValue value={fmtDate(record.submitDate) || "—"} />
               </Field>
               <div style={{ gridColumn: "span 2", marginBottom: 20 }}>
                 <p
@@ -3002,7 +3003,7 @@ function DataEntryView({
                             flexShrink: 0,
                           }}
                         >
-                          {r.date}
+                          {fmtDate(r.date)}
                         </span>
                         <span
                           style={{
@@ -3064,7 +3065,7 @@ function DataEntryView({
                         >
                           {r.submitDate === "사전공고" || !r.submitDate
                             ? "사전공고"
-                            : `제출일 ${r.submitDate}`}
+                            : `제출일 ${fmtDate(r.submitDate)}`}
                         </span>
                       </div>
                     </div>
@@ -3730,7 +3731,7 @@ function TeamStatsView({ records, selectedYear }) {
                       color: NAVY[400],
                     }}
                   >
-                    {r.date}
+                    {fmtDate(r.date)}
                   </td>
                   <td
                     style={{
@@ -3739,7 +3740,7 @@ function TeamStatsView({ records, selectedYear }) {
                       color: NAVY[400],
                     }}
                   >
-                    {r.submitDate || "—"}
+                    {fmtDate(r.submitDate) || "—"}
                   </td>
                 </tr>
               );
