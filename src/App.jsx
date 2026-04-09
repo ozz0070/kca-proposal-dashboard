@@ -118,9 +118,15 @@ function storageSet(key, val) {
 // ─── Load 함수 (Supabase 우선, 실패 시 localStorage) ───
 async function loadRecords() {
   const r = await db.loadRecords();
-  if (r && Array.isArray(r) && r.length > 0) { useAPI = true; return r; }
+  if (r && Array.isArray(r)) {
+    useAPI = true;
+    console.log("[Load] records from Supabase:", r.length, "건");
+    return r;
+  }
   const s = storageGet("kca-records-v1");
-  return (s && s.length > 0 ? s : null) || INITIAL_RECORDS;
+  const result = (s && s.length > 0 ? s : null) || INITIAL_RECORDS;
+  console.log("[Load] records from localStorage:", result.length, "건");
+  return result;
 }
 async function loadMembers() {
   const r = await db.loadMembers();
