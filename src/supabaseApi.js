@@ -25,41 +25,49 @@ export async function saveMembers(members) {
   if (!supabase) return;
   await supabase.from("members").delete().neq("id", "");
   if (members.length > 0) {
-    await supabase.from("members").upsert(members, { onConflict: "id" });
+    const { error } = await supabase.from("members").upsert(members, { onConflict: "id" });
+    if (error) console.error("[DB] saveMembers:", error.message);
   }
 }
 
 export async function upsertMember(member) {
   if (!supabase) return;
-  await supabase.from("members").upsert(member, { onConflict: "id" });
+  const { error } = await supabase.from("members").upsert(member, { onConflict: "id" });
+  if (error) console.error("[DB] upsertMember:", error.message);
 }
 
 export async function deleteMember(id) {
   if (!supabase) return;
-  await supabase.from("members").delete().eq("id", id);
+  const { error } = await supabase.from("members").delete().eq("id", id);
+  if (error) console.error("[DB] deleteMember:", error.message);
 }
 
 // ─── Records ───
 export async function loadRecords() {
   if (!supabase) return null;
   const { data, error } = await supabase.from("records").select("*");
-  if (error) return null;
+  if (error) { console.error("[DB] loadRecords:", error.message); return null; }
   return data;
 }
 
 export async function upsertRecord(record) {
   if (!supabase) return;
-  await supabase.from("records").upsert(record, { onConflict: "id" });
+  const row = { ...record, id: String(record.id) };
+  const { error } = await supabase.from("records").upsert(row, { onConflict: "id" });
+  if (error) console.error("[DB] upsertRecord:", error.message);
 }
 
 export async function deleteRecord(id) {
   if (!supabase) return;
-  await supabase.from("records").delete().eq("id", id);
+  const { error } = await supabase.from("records").delete().eq("id", String(id));
+  if (error) console.error("[DB] deleteRecord:", error.message);
 }
 
 export async function upsertRecords(records) {
   if (!supabase || records.length === 0) return;
-  await supabase.from("records").upsert(records, { onConflict: "id" });
+  const rows = records.map(r => ({ ...r, id: String(r.id) }));
+  const { error } = await supabase.from("records").upsert(rows, { onConflict: "id" });
+  if (error) console.error("[DB] upsertRecords:", error.message);
 }
 
 // ─── Clients ───
@@ -74,12 +82,13 @@ export async function saveClients(clients) {
   if (!supabase) return;
   await supabase.from("clients").delete().neq("name", "");
   if (clients.length > 0) {
-    await supabase
+    const { error } = await supabase
       .from("clients")
       .upsert(
         clients.map((name) => ({ name })),
         { onConflict: "name" },
       );
+    if (error) console.error("[DB] saveClients:", error.message);
   }
 }
 
@@ -109,17 +118,22 @@ export async function loadReviews() {
 
 export async function upsertReview(review) {
   if (!supabase) return;
-  await supabase.from("reviews").upsert(review, { onConflict: "id" });
+  const row = { ...review, id: String(review.id) };
+  const { error } = await supabase.from("reviews").upsert(row, { onConflict: "id" });
+  if (error) console.error("[DB] upsertReview:", error.message);
 }
 
 export async function deleteReview(id) {
   if (!supabase) return;
-  await supabase.from("reviews").delete().eq("id", id);
+  const { error } = await supabase.from("reviews").delete().eq("id", String(id));
+  if (error) console.error("[DB] deleteReview:", error.message);
 }
 
 export async function upsertReviews(reviews) {
   if (!supabase || reviews.length === 0) return;
-  await supabase.from("reviews").upsert(reviews, { onConflict: "id" });
+  const rows = reviews.map(r => ({ ...r, id: String(r.id) }));
+  const { error } = await supabase.from("reviews").upsert(rows, { onConflict: "id" });
+  if (error) console.error("[DB] upsertReviews:", error.message);
 }
 
 // ─── Schedules ───
@@ -132,12 +146,15 @@ export async function loadSchedules() {
 
 export async function upsertSchedule(schedule) {
   if (!supabase) return;
-  await supabase.from("schedules").upsert(schedule, { onConflict: "id" });
+  const row = { ...schedule, id: String(schedule.id) };
+  const { error } = await supabase.from("schedules").upsert(row, { onConflict: "id" });
+  if (error) console.error("[DB] upsertSchedule:", error.message);
 }
 
 export async function deleteSchedule(id) {
   if (!supabase) return;
-  await supabase.from("schedules").delete().eq("id", id);
+  const { error } = await supabase.from("schedules").delete().eq("id", String(id));
+  if (error) console.error("[DB] deleteSchedule:", error.message);
 }
 
 // ─── KCA Data ───
