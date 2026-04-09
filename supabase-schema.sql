@@ -27,7 +27,8 @@ CREATE TABLE records (
   "submitDate" TEXT,            -- 제출일
   assistants TEXT,              -- 보조제안 (콤마 구분 문자열 또는 JSON)
   notes TEXT,                   -- 비고
-  "groupId" TEXT                -- 복사 연결 그룹 ID
+  "groupId" TEXT,               -- 복사 연결 그룹 ID
+  "cancelDate" TEXT             -- 취소일
 );
 
 -- 3. clients (발주기관)
