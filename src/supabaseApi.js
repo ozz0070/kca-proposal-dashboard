@@ -43,17 +43,32 @@ export async function deleteMember(id) {
 }
 
 // ─── Records ───
+// assistants 필드: 앱에서는 배열, DB에서는 JSON 문자열
+function recordToRow(record) {
+  const row = { ...record, id: String(record.id) };
+  if (Array.isArray(row.assistants)) {
+    row.assistants = JSON.stringify(row.assistants);
+  }
+  return row;
+}
+function rowToRecord(row) {
+  if (row.assistants && typeof row.assistants === "string") {
+    try { row.assistants = JSON.parse(row.assistants); } catch { row.assistants = []; }
+  }
+  if (!row.assistants) row.assistants = [];
+  return row;
+}
+
 export async function loadRecords() {
   if (!supabase) return null;
   const { data, error } = await supabase.from("records").select("*");
   if (error) { console.error("[DB] loadRecords:", error.message); return null; }
-  return data;
+  return data.map(rowToRecord);
 }
 
 export async function upsertRecord(record) {
   if (!supabase) return;
-  const row = { ...record, id: String(record.id) };
-  const { error } = await supabase.from("records").upsert(row, { onConflict: "id" });
+  const { error } = await supabase.from("records").upsert(recordToRow(record), { onConflict: "id" });
   if (error) console.error("[DB] upsertRecord:", error.message);
 }
 
@@ -65,8 +80,7 @@ export async function deleteRecord(id) {
 
 export async function upsertRecords(records) {
   if (!supabase || records.length === 0) return;
-  const rows = records.map(r => ({ ...r, id: String(r.id) }));
-  const { error } = await supabase.from("records").upsert(rows, { onConflict: "id" });
+  const { error } = await supabase.from("records").upsert(records.map(recordToRow), { onConflict: "id" });
   if (error) console.error("[DB] upsertRecords:", error.message);
 }
 

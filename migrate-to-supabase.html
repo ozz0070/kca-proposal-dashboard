@@ -128,13 +128,17 @@
         }
       } catch (e) { log(`  ✗ members 오류: ${e.message}`); }
 
-      // 2. Records
+      // 2. Records (assistants 배열 → JSON 문자열 변환)
       try {
         const records = sheetsData.records;
         if (records && records.length > 0) {
-          // Supabase는 한번에 1000건 제한이 있으므로 분할
-          for (let i = 0; i < records.length; i += 500) {
-            const batch = records.slice(i, i + 500);
+          const rows = records.map(r => ({
+            ...r,
+            id: String(r.id),
+            assistants: Array.isArray(r.assistants) ? JSON.stringify(r.assistants) : (r.assistants || '[]'),
+          }));
+          for (let i = 0; i < rows.length; i += 500) {
+            const batch = rows.slice(i, i + 500);
             const { error } = await supabase.from('records').upsert(batch, { onConflict: 'id' });
             if (error) throw error;
           }
