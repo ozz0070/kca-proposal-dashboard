@@ -6,8 +6,8 @@
 
 ## 기술 스택
 - **프론트엔드**: React (Vite) — 단일 파일 `src/App.jsx` (약 2,800줄)
-- **DB**: Google Sheets (Google Apps Script API 경유)
-- **로컬 폴백**: localStorage (API 실패 시 자동 전환)
+- **DB**: Supabase (PostgreSQL) — `src/supabaseApi.js` 모듈
+- **로컬 폴백**: localStorage (DB 실패 시 자동 전환)
 - **호스팅**: Vercel (GitHub 연동 자동 배포)
 - **차트**: Recharts
 - **아이콘**: Lucide React
@@ -16,29 +16,30 @@
 ## 배포 정보
 - **Vercel 프로젝트명**: kca-proposal-dashboard-v2
 - **GitHub**: ozz0070/kca-proposal-dashboard
-- **구글시트 ID**: 1ep-WXuFE9Gv_9ThIXPRkzY5C8fEK7KPDXkH5S5WS4qo
-- **Apps Script 웹앱 URL**: https://script.google.com/macros/s/AKfycbw0Y8YWL-d5O1msLnKA9UMACTfsgXrMd9vs1yFc68VUJr6Z-ySFIa37TsUrVXhK936b/exec
+
+## 환경변수
+- `VITE_SUPABASE_URL` — Supabase 프로젝트 URL
+- `VITE_SUPABASE_ANON_KEY` — Supabase anon key
 
 ## 데이터 구조
 
-### 구글시트 워크시트 6개
-| 워크시트 | 헤더 |
+### Supabase 테이블 6개
+| 테이블 | 컬럼 |
 |---------|------|
-| members | id, pw, name, role |
-| records | id, date, member, leader, type, project, client, amount, status, month, submitDate, assistants, notes, groupId |
-| clients | name (146개 공공기관) |
-| reviews | id, date, member, type, author, leader, project, client, amount, month, groupId |
-| schedules | id, start, end, task, category, author, authorId |
-| kca_data | year, amount |
+| members | id (PK), pw, name, role |
+| records | id (PK), date, member, leader, type, project, client, amount, status, month, submitDate, assistants, notes, groupId |
+| clients | name (PK) |
+| reviews | id (PK), date, member, type, author, leader, project, client, amount, month, groupId |
+| schedules | id (PK), start, end, task, category, author, authorId |
+| kca_data | year (PK), amount |
 
 ### API 통신 방식
-- **읽기**: GET `?action=getMembers` 등
-- **쓰기**: GET `?payload={action,data}` (POST는 Apps Script 리다이렉트로 차단되어 GET 방식 사용)
-- **저장 방식**: 전체 교체(replaceSheet) — 데이터 변경 시 해당 워크시트 전체를 교체
-- **듀얼 모드**: API 성공 시 구글시트 사용, 실패 시 localStorage 폴백
+- **DB 모듈**: `src/supabaseApi.js` — Supabase JS SDK 사용
+- **저장 방식**: 개별 레코드 upsert/delete (전체 교체 아님)
+- **듀얼 모드**: Supabase 연결 성공 시 DB 사용, 실패 시 localStorage 폴백
+- **localStorage 자동 백업**: 모든 state 변경 시 localStorage에도 자동 저장
 
 ### 비밀번호 비교 주의사항
-구글시트에서 숫자형 비밀번호(예: 1234)를 가져오면 number 타입이 됨.
 로그인/패스워드 변경 시 반드시 `String(m.pw) === pw` 로 비교해야 함.
 
 ## 인증 시스템
@@ -165,8 +166,8 @@ const ACCENT = { blue:"#3B82F6", green:"#10B981", amber:"#F59E0B", red:"#EF4444"
 
 1. **모든 스타일은 inline style** — className/Tailwind 사용 금지
 2. **Hooks 순서** — useMemo/useState를 조건부 return 뒤에 놓지 말 것
-3. **비밀번호 비교** — `String(m.pw) === pw` 사용 (구글시트 숫자 변환 문제)
+3. **비밀번호 비교** — `String(m.pw) === pw` 사용
 4. **members vs memberNames** — members는 객체 배열, memberNames는 이름 문자열 배열. Select에는 memberNames를 전달
-5. **POST 불가** — Apps Script 리다이렉트 문제로 모든 쓰기를 GET+payload로 처리
+5. **DB 개별 저장** — 레코드 추가/수정/삭제 시 `db.upsertRecord()`, `db.deleteRecord()` 등 개별 호출. 전체 교체 아님
 6. **달력 월요일 시작** — firstDow 계산: `(getDay() + 6) % 7`
 7. **괄호 균형 확인** — 수정 후 braces/parens/brackets 균형 체크 필수

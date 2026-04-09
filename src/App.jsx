@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import * as db from "./supabaseApi.js";
 import {
   BarChart,
   Bar,
@@ -87,7 +88,7 @@ const ACCENT = {
   cyan: "#06B6D4",
 };
 
-// ─── 2025 실적 데이터 (구글시트 기반) ───
+// ─── 초기 데이터 ───
 const INITIAL_RECORDS = [];
 
 // ─── Utility ───
@@ -96,40 +97,10 @@ const pct = (n, d) => (d > 0 ? `${((n / d) * 100).toFixed(1)}%` : "N/A");
 const fmtDate = (d) => (d ? String(d).slice(0, 10) : "");
 const fmtDateRange = (s, e) => { const ds = fmtDate(s); const de = fmtDate(e); return ds === de ? ds : `${ds} ~ ${de}`; };
 
-// ─── Google Apps Script API ───
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbw0Y8YWL-d5O1msLnKA9UMACTfsgXrMd9vs1yFc68VUJr6Z-ySFIa37TsUrVXhK936b/exec";
+// ─── Supabase DB API ───
+let useAPI = false; // DB 연결 성공 여부
 
-let useAPI = false; // 구글시트 API 사용 가능 여부
-const apiLoadSuccess = new Set(); // API 로드 성공한 액션 추적 (엔드포인트별)
-let loadedRecordsCount = -1; // API에서 로드된 레코드 수 (-1: 미로드)
-
-async function apiGet(action) {
-  try {
-    const res = await fetch(`${API_URL}?action=${action}`, {
-      redirect: "follow",
-    });
-    const data = await res.json();
-    if (data && !data.error) {
-      useAPI = true;
-      apiLoadSuccess.add(action);
-      return data;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function apiPost(action, data) {
-  if (!useAPI) return null;
-  try {
-    const payload = encodeURIComponent(JSON.stringify({ action, data }));
-    await fetch(`${API_URL}?payload=${payload}`, { redirect: "follow" });
-  } catch {}
-}
-
-// ─── localStorage 헬퍼 ───
+// ─── localStorage 헬퍼 (폴백용) ───
 function storageGet(key) {
   try {
     const r = localStorage.getItem(key);
@@ -144,79 +115,42 @@ function storageSet(key, val) {
   } catch {}
 }
 
-// ─── Load 함수 (API 우선, 실패 시 localStorage) ───
+// ─── Load 함수 (Supabase 우선, 실패 시 localStorage) ───
 async function loadRecords() {
-  const r = await apiGet("getRecords");
-  if (r && Array.isArray(r) && r.length > 0) {
-    loadedRecordsCount = r.length;
-    return r;
-  }
-  const s = await storageGet("kca-records-v1");
-  const result = (s && s.length > 0 ? s : null) || INITIAL_RECORDS;
-  loadedRecordsCount = result.length;
-  return result;
+  const r = await db.loadRecords();
+  if (r && Array.isArray(r) && r.length > 0) { useAPI = true; return r; }
+  const s = storageGet("kca-records-v1");
+  return (s && s.length > 0 ? s : null) || INITIAL_RECORDS;
 }
 async function loadMembers() {
-  const r = await apiGet("getMembers");
-  if (r && Array.isArray(r) && r.length > 0) return r;
-  const s = await storageGet("kca-members-v1");
+  const r = await db.loadMembers();
+  if (r && Array.isArray(r) && r.length > 0) { useAPI = true; return r; }
+  const s = storageGet("kca-members-v1");
   return s && s.length > 0 ? s : DEFAULT_MEMBERS;
 }
 async function loadClients() {
-  const r = await apiGet("getClients");
-  if (r && Array.isArray(r) && r.length > 0) return r;
-  const s = await storageGet("kca-clients-v1");
+  const r = await db.loadClients();
+  if (r && Array.isArray(r) && r.length > 0) { useAPI = true; return r; }
+  const s = storageGet("kca-clients-v1");
   return s && s.length > 0 ? s : DEFAULT_CLIENTS;
 }
 async function loadKcaTotal() {
-  const r = await apiGet("getKcaData");
-  if (r && typeof r === "object" && !Array.isArray(r) && !r.error) return r;
-  const s = await storageGet("kca-kcadata-v1");
+  const r = await db.loadKcaData();
+  if (r && typeof r === "object" && Object.keys(r).length > 0) { useAPI = true; return r; }
+  const s = storageGet("kca-kcadata-v1");
   return s || DEFAULT_KCA_DATA;
 }
 async function loadReviews() {
-  const r = await apiGet("getReviews");
-  if (r && Array.isArray(r)) return r;
-  const s = await storageGet("kca-reviews-v1");
+  const r = await db.loadReviews();
+  if (r && Array.isArray(r)) { useAPI = true; return r; }
+  const s = storageGet("kca-reviews-v1");
   return s || [];
 }
 async function loadSchedules() {
-  const r = await apiGet("getSchedules");
-  if (r && Array.isArray(r)) return r;
-  const s = await storageGet("kca-schedules-v1");
+  const r = await db.loadSchedules();
+  if (r && Array.isArray(r)) { useAPI = true; return r; }
+  const s = storageGet("kca-schedules-v1");
   return s || [];
-}
-
-// ─── Save 함수 (API + localStorage 동시 저장) ───
-// 해당 워크시트의 API 로드가 성공했을 때만 API에 저장 (다른 엔드포인트만 성공한 경우 폴백 데이터 덮어쓰기 방지)
-async function saveRecords(records) {
-  if (apiLoadSuccess.has("getRecords")) {
-    // 안전장치: 로드된 데이터가 있는데 빈 배열로 덮어쓰기 방지
-    if (records.length > 0 || loadedRecordsCount === 0) {
-      apiPost("setRecords", records);
-    }
-  }
-  storageSet("kca-records-v1", records);
-}
-async function saveMembers(members) {
-  if (apiLoadSuccess.has("getMembers")) apiPost("setMembers", members);
-  storageSet("kca-members-v1", members);
-}
-async function saveClients(clients) {
-  if (apiLoadSuccess.has("getClients")) apiPost("setClients", clients);
-  storageSet("kca-clients-v1", clients);
-}
-async function saveKcaTotal(data) {
-  if (apiLoadSuccess.has("getKcaData")) apiPost("setKcaData", data);
-  storageSet("kca-kcadata-v1", data);
-}
-async function saveReviews(reviews) {
-  if (apiLoadSuccess.has("getReviews")) apiPost("setReviews", reviews);
-  storageSet("kca-reviews-v1", reviews);
-}
-async function saveSchedules(schedules) {
-  if (apiLoadSuccess.has("getSchedules")) apiPost("setSchedules", schedules);
-  storageSet("kca-schedules-v1", schedules);
 }
 
 // ─── Stats Computation ───
@@ -8892,24 +8826,13 @@ export default function App() {
     });
   }, []);
 
-  useEffect(() => {
-    if (loaded) saveRecords(records);
-  }, [records, loaded]);
-  useEffect(() => {
-    if (loaded) saveMembers(members);
-  }, [members, loaded]);
-  useEffect(() => {
-    if (loaded) saveClients(clients);
-  }, [clients, loaded]);
-  useEffect(() => {
-    if (loaded) saveKcaTotal(kcaData);
-  }, [kcaData, loaded]);
-  useEffect(() => {
-    if (loaded) saveReviews(reviews);
-  }, [reviews, loaded]);
-  useEffect(() => {
-    if (loaded) saveSchedules(schedules);
-  }, [schedules, loaded]);
+  // localStorage 폴백 자동 저장 (DB 실패 시 복구용)
+  useEffect(() => { if (loaded) storageSet("kca-records-v1", records); }, [records, loaded]);
+  useEffect(() => { if (loaded) storageSet("kca-members-v1", members); }, [members, loaded]);
+  useEffect(() => { if (loaded) storageSet("kca-clients-v1", clients); }, [clients, loaded]);
+  useEffect(() => { if (loaded) storageSet("kca-kcadata-v1", kcaData); }, [kcaData, loaded]);
+  useEffect(() => { if (loaded) storageSet("kca-reviews-v1", reviews); }, [reviews, loaded]);
+  useEffect(() => { if (loaded) storageSet("kca-schedules-v1", schedules); }, [schedules, loaded]);
 
   const stats = useMemo(
     () => computeStats(yearRecords, filterMonth, memberNames),
@@ -8919,6 +8842,7 @@ export default function App() {
   const handleSignup = (newUser) => {
     setMembers((prev) => [...prev, newUser]);
     setCurrentUser(newUser);
+    db.upsertMember(newUser);
   };
 
   if (!loaded) {
@@ -8983,41 +8907,64 @@ export default function App() {
     "amount",
     "submitDate",
   ];
-  const addRecord = (r) => setRecords((prev) => [...prev, r]);
-  const deleteRecord = (id) =>
+  const addRecord = (r) => {
+    setRecords((prev) => [...prev, r]);
+    db.upsertRecord(r);
+  };
+  const deleteRecord = (id) => {
     setRecords((prev) => prev.filter((r) => r.id !== id));
+    db.deleteRecord(id);
+  };
   const updateRecord = (updated) =>
     setRecords((prev) => {
       const newRecords = prev.map((r) => (r.id === updated.id ? updated : r));
-      if (!updated.groupId) return newRecords;
+      if (!updated.groupId) {
+        db.upsertRecord(updated);
+        return newRecords;
+      }
       const shared = {};
       SHARED_FIELDS.forEach((f) => {
         shared[f] = updated[f];
       });
-      return newRecords.map((r) =>
+      const result = newRecords.map((r) =>
         r.groupId === updated.groupId && r.id !== updated.id
           ? { ...r, ...shared }
           : r,
       );
+      // DB에 변경된 레코드들 일괄 저장
+      const changed = result.filter((r) => r.groupId === updated.groupId);
+      db.upsertRecords(changed);
+      return result;
     });
 
   const REVIEW_SHARED = ["author", "leader", "client", "project", "amount"];
-  const addReview = (r) => setReviews((prev) => [...prev, r]);
-  const deleteReview = (id) =>
+  const addReview = (r) => {
+    setReviews((prev) => [...prev, r]);
+    db.upsertReview(r);
+  };
+  const deleteReview = (id) => {
     setReviews((prev) => prev.filter((r) => r.id !== id));
+    db.deleteReview(id);
+  };
   const updateReview = (updated) =>
     setReviews((prev) => {
       const newRecs = prev.map((r) => (r.id === updated.id ? updated : r));
-      if (!updated.groupId) return newRecs;
+      if (!updated.groupId) {
+        db.upsertReview(updated);
+        return newRecs;
+      }
       const shared = {};
       REVIEW_SHARED.forEach((f) => {
         shared[f] = updated[f];
       });
-      return newRecs.map((r) =>
+      const result = newRecs.map((r) =>
         r.groupId === updated.groupId && r.id !== updated.id
           ? { ...r, ...shared }
           : r,
       );
+      const changed = result.filter((r) => r.groupId === updated.groupId);
+      db.upsertReviews(changed);
+      return result;
     });
 
   const isSettings =
@@ -9521,11 +9468,13 @@ export default function App() {
                         });
                         return;
                       }
+                      const updatedMember = { ...currentUser, pw: pwForm.new1 };
                       const updated = members.map((m) =>
-                        m.id === currentUser.id ? { ...m, pw: pwForm.new1 } : m,
+                        m.id === currentUser.id ? updatedMember : m,
                       );
                       setMembers(updated);
-                      setCurrentUser({ ...currentUser, pw: pwForm.new1 });
+                      setCurrentUser(updatedMember);
+                      db.upsertMember(updatedMember);
                       setPwMsg({
                         text: "패스워드가 변경되었습니다.",
                         ok: true,
@@ -9558,7 +9507,7 @@ export default function App() {
           style={{ padding: "12px 20px", borderTop: `1px solid ${NAVY[600]}` }}
         >
           <p style={{ fontSize: 10, color: NAVY[500], lineHeight: 1.5 }}>
-            {useAPI ? "● Google Sheets 연동" : "● 로컬 저장 모드"}
+            {useAPI ? "● Supabase DB 연동" : "● 로컬 저장 모드"}
           </p>
         </div>
       </nav>
@@ -9643,25 +9592,19 @@ export default function App() {
         {view === "schedule" && (
           <ScheduleView
             schedules={schedules}
-            onAdd={(s) => setSchedules((prev) => [...prev, s])}
-            onDelete={(id) =>
-              setSchedules((prev) => prev.filter((s) => s.id !== id))
-            }
-            onUpdate={(updated) =>
-              setSchedules((prev) =>
-                prev.map((s) => (s.id === updated.id ? updated : s)),
-              )
-            }
+            onAdd={(s) => { setSchedules((prev) => [...prev, s]); db.upsertSchedule(s); }}
+            onDelete={(id) => { setSchedules((prev) => prev.filter((s) => s.id !== id)); db.deleteSchedule(id); }}
+            onUpdate={(updated) => { setSchedules((prev) => prev.map((s) => (s.id === updated.id ? updated : s))); db.upsertSchedule(updated); }}
             currentUser={currentUser}
           />
         )}
         {view === "team" && (
-          <TeamMemberListView members={members} onUpdate={setMembers} />
+          <TeamMemberListView members={members} onUpdate={(m) => { setMembers(m); db.saveMembers(m); }} />
         )}
         {view === "clients" && (
           <MasterListView
             items={clients}
-            onUpdate={setClients}
+            onUpdate={(c) => { setClients(c); db.saveClients(c); }}
             title="발주기관"
             unit="개"
             placeholder="기관명 입력"
@@ -9669,7 +9612,7 @@ export default function App() {
           />
         )}
         {view === "kcasetting" && (
-          <KcaSettingsView kcaData={kcaData} onUpdate={setKcaData} />
+          <KcaSettingsView kcaData={kcaData} onUpdate={(k) => { setKcaData(k); db.saveKcaData(k); }} />
         )}
       </main>
 

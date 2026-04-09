@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>KCA 데이터 마이그레이션 (Google Sheets → Supabase)</title>
+  <style>
+    body { font-family: 'Pretendard', sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; background: #f5f7fa; }
+    h1 { color: #1A3A5C; font-size: 22px; }
+    .step { background: white; padding: 20px; border-radius: 12px; margin: 16px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .step h3 { margin-top: 0; color: #1A3A5C; }
+    input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin: 6px 0; box-sizing: border-box; font-size: 14px; }
+    button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
+    .btn-primary { background: #3B82F6; color: white; }
+    .btn-success { background: #10B981; color: white; }
+    .btn-danger { background: #EF4444; color: white; }
+    #log { background: #1a1a2e; color: #10B981; padding: 16px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 13px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
+    .status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .status-ok { background: #D1FAE5; color: #065F46; }
+    .status-err { background: #FEE2E2; color: #991B1B; }
+    .status-wait { background: #FEF3C7; color: #92400E; }
+  </style>
+</head>
+<body>
+  <h1>KCA 데이터 마이그레이션</h1>
+  <p>Google Sheets 데이터를 Supabase DB로 이전합니다.</p>
+
+  <div class="step">
+    <h3>1단계: Supabase 연결 정보 입력</h3>
+    <label>Supabase URL</label>
+    <input id="sbUrl" placeholder="https://your-project-id.supabase.co">
+    <label>Supabase Anon Key</label>
+    <input id="sbKey" placeholder="eyJhbGciOi...">
+  </div>
+
+  <div class="step">
+    <h3>2단계: Google Sheets에서 데이터 가져오기</h3>
+    <p>기존 Google Apps Script API에서 데이터를 읽어옵니다.</p>
+    <button class="btn-primary" onclick="fetchFromSheets()">Google Sheets에서 가져오기</button>
+    <div id="fetch-status" style="margin-top: 10px;"></div>
+  </div>
+
+  <div class="step">
+    <h3>3단계: Supabase로 데이터 이전</h3>
+    <button class="btn-success" onclick="migrateToSupabase()">Supabase로 마이그레이션</button>
+    <div id="migrate-status" style="margin-top: 10px;"></div>
+  </div>
+
+  <div class="step">
+    <h3>로그</h3>
+    <div id="log"></div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+    const API_URL = "https://script.google.com/macros/s/AKfycbw0Y8YWL-d5O1msLnKA9UMACTfsgXrMd9vs1yFc68VUJr6Z-ySFIa37TsUrVXhK936b/exec";
+
+    let sheetsData = {};
+
+    function log(msg) {
+      const el = document.getElementById('log');
+      el.textContent += msg + '\n';
+      el.scrollTop = el.scrollHeight;
+    }
+
+    async function apiGet(action) {
+      try {
+        const res = await fetch(`${API_URL}?action=${action}`, { redirect: 'follow' });
+        return await res.json();
+      } catch (e) {
+        log(`[ERROR] ${action}: ${e.message}`);
+        return null;
+      }
+    }
+
+    window.fetchFromSheets = async function() {
+      const statusEl = document.getElementById('fetch-status');
+      statusEl.innerHTML = '<span class="status status-wait">가져오는 중...</span>';
+      log('=== Google Sheets 데이터 가져오기 시작 ===');
+
+      const actions = ['getMembers', 'getRecords', 'getClients', 'getKcaData', 'getReviews', 'getSchedules'];
+      const keys = ['members', 'records', 'clients', 'kcaData', 'reviews', 'schedules'];
+
+      for (let i = 0; i < actions.length; i++) {
+        log(`[FETCH] ${actions[i]}...`);
+        const data = await apiGet(actions[i]);
+        if (data && !data.error) {
+          sheetsData[keys[i]] = data;
+          const count = Array.isArray(data) ? data.length : Object.keys(data).length;
+          log(`  ✓ ${keys[i]}: ${count}건`);
+        } else {
+          sheetsData[keys[i]] = keys[i] === 'kcaData' ? {} : [];
+          log(`  ✗ ${keys[i]}: 데이터 없음 또는 오류`);
+        }
+      }
+
+      log('=== 가져오기 완료 ===\n');
+      statusEl.innerHTML = '<span class="status status-ok">완료</span> - 아래 로그를 확인하세요.';
+    };
+
+    window.migrateToSupabase = async function() {
+      const url = document.getElementById('sbUrl').value.trim();
+      const key = document.getElementById('sbKey').value.trim();
+      const statusEl = document.getElementById('migrate-status');
+
+      if (!url || !key) {
+        statusEl.innerHTML = '<span class="status status-err">Supabase URL과 Key를 입력해주세요.</span>';
+        return;
+      }
+
+      if (!sheetsData.members) {
+        statusEl.innerHTML = '<span class="status status-err">먼저 Google Sheets에서 데이터를 가져와주세요.</span>';
+        return;
+      }
+
+      statusEl.innerHTML = '<span class="status status-wait">마이그레이션 중...</span>';
+      log('=== Supabase 마이그레이션 시작 ===');
+
+      const supabase = createClient(url, key);
+
+      // 1. Members
+      try {
+        const members = sheetsData.members;
+        if (members && members.length > 0) {
+          const { error } = await supabase.from('members').upsert(members, { onConflict: 'id' });
+          if (error) throw error;
+          log(`  ✓ members: ${members.length}건 이전 완료`);
+        }
+      } catch (e) { log(`  ✗ members 오류: ${e.message}`); }
+
+      // 2. Records
+      try {
+        const records = sheetsData.records;
+        if (records && records.length > 0) {
+          // Supabase는 한번에 1000건 제한이 있으므로 분할
+          for (let i = 0; i < records.length; i += 500) {
+            const batch = records.slice(i, i + 500);
+            const { error } = await supabase.from('records').upsert(batch, { onConflict: 'id' });
+            if (error) throw error;
+          }
+          log(`  ✓ records: ${records.length}건 이전 완료`);
+        }
+      } catch (e) { log(`  ✗ records 오류: ${e.message}`); }
+
+      // 3. Clients
+      try {
+        const clients = sheetsData.clients;
+        if (clients && clients.length > 0) {
+          const rows = clients.map(name => ({ name }));
+          for (let i = 0; i < rows.length; i += 500) {
+            const batch = rows.slice(i, i + 500);
+            const { error } = await supabase.from('clients').upsert(batch, { onConflict: 'name' });
+            if (error) throw error;
+          }
+          log(`  ✓ clients: ${clients.length}건 이전 완료`);
+        }
+      } catch (e) { log(`  ✗ clients 오류: ${e.message}`); }
+
+      // 4. Reviews
+      try {
+        const reviews = sheetsData.reviews;
+        if (reviews && reviews.length > 0) {
+          for (let i = 0; i < reviews.length; i += 500) {
+            const batch = reviews.slice(i, i + 500);
+            const { error } = await supabase.from('reviews').upsert(batch, { onConflict: 'id' });
+            if (error) throw error;
+          }
+          log(`  ✓ reviews: ${reviews.length}건 이전 완료`);
+        }
+      } catch (e) { log(`  ✗ reviews 오류: ${e.message}`); }
+
+      // 5. Schedules
+      try {
+        const schedules = sheetsData.schedules;
+        if (schedules && schedules.length > 0) {
+          for (let i = 0; i < schedules.length; i += 500) {
+            const batch = schedules.slice(i, i + 500);
+            const { error } = await supabase.from('schedules').upsert(batch, { onConflict: 'id' });
+            if (error) throw error;
+          }
+          log(`  ✓ schedules: ${schedules.length}건 이전 완료`);
+        }
+      } catch (e) { log(`  ✗ schedules 오류: ${e.message}`); }
+
+      // 6. KCA Data
+      try {
+        const kcaData = sheetsData.kcaData;
+        if (kcaData && typeof kcaData === 'object') {
+          const rows = Object.entries(kcaData).map(([year, amount]) => ({ year, amount }));
+          if (rows.length > 0) {
+            const { error } = await supabase.from('kca_data').upsert(rows, { onConflict: 'year' });
+            if (error) throw error;
+            log(`  ✓ kca_data: ${rows.length}건 이전 완료`);
+          }
+        }
+      } catch (e) { log(`  ✗ kca_data 오류: ${e.message}`); }
+
+      log('=== 마이그레이션 완료 ===');
+      statusEl.innerHTML = '<span class="status status-ok">마이그레이션 완료!</span>';
+    };
+  </script>
+</body>
+</html>
