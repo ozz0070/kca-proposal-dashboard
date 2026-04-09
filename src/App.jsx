@@ -1280,6 +1280,7 @@ function RecordDetail({
     ...r,
     date: toDateStr(r.date),
     submitDate: r.submitDate ? String(r.submitDate).slice(0, 10) : "",
+    cancelDate: r.cancelDate ? String(r.cancelDate).slice(0, 10) : "",
   });
   const [form, setForm] = useState(normalizeRecord(record));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1311,7 +1312,13 @@ function RecordDetail({
 
   const handleStatusChange = () => {
     const month = record.date.slice(5, 7);
-    onUpdate({ ...record, status: showStatusConfirm, month });
+    const updated = { ...record, status: showStatusConfirm, month };
+    if (showStatusConfirm === "취소") {
+      updated.cancelDate = new Date().toISOString().slice(0, 10);
+    } else if (record.status === "취소") {
+      updated.cancelDate = "";
+    }
+    onUpdate(updated);
     setShowStatusConfirm(null);
   };
 
@@ -2001,10 +2008,19 @@ function RecordDetail({
               <Select
                 label="상태"
                 value={form.status}
-                onChange={(v) => setForm((p) => ({ ...p, status: v }))}
+                onChange={(v) => setForm((p) => ({
+                  ...p,
+                  status: v,
+                  cancelDate: v === "취소" && !p.cancelDate ? new Date().toISOString().slice(0, 10) : v !== "취소" ? "" : p.cancelDate,
+                }))}
                 options={STATUS_OPTIONS}
               />
-              <div></div>
+              <Input
+                label="취소일"
+                type="date"
+                value={form.cancelDate || ""}
+                onChange={(v) => setForm((p) => ({ ...p, cancelDate: v }))}
+              />
               <ClientSearchInput
                 label="발주기관"
                 value={form.client}
@@ -2164,7 +2180,9 @@ function RecordDetail({
               <Field label="상태">
                 <StatusBadge status={record.status} />
               </Field>
-              <div></div>
+              <Field label="취소일">
+                <FieldValue value={record.cancelDate ? fmtDate(record.cancelDate) : "—"} />
+              </Field>
               <Field label="발주기관">
                 <FieldValue value={record.client} />
               </Field>
@@ -2290,6 +2308,7 @@ function DataEntryView({
     submitDate: "사전공고",
     assistants: [],
     notes: "",
+    cancelDate: "",
   };
   const [form, setForm] = useState(empty);
   const [showForm, setShowForm] = useState(false);
@@ -2640,11 +2659,20 @@ function DataEntryView({
               <Select
                 label="상태"
                 value={form.status}
-                onChange={(v) => setForm((p) => ({ ...p, status: v }))}
+                onChange={(v) => setForm((p) => ({
+                  ...p,
+                  status: v,
+                  cancelDate: v === "취소" && !p.cancelDate ? new Date().toISOString().slice(0, 10) : v !== "취소" ? "" : p.cancelDate,
+                }))}
                 options={STATUS_OPTIONS}
               />
             )}
-            <div></div>
+            <Input
+              label="취소일"
+              type="date"
+              value={form.cancelDate || ""}
+              onChange={(v) => setForm((p) => ({ ...p, cancelDate: v }))}
+            />
             {copyMode ? (
               <div
                 style={{
@@ -3264,6 +3292,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
     const todayMonth = new Date().toISOString().slice(5, 7);
     const getMonth = (r) =>
       r.status === "수주" || r.status === "실주" ? r.submitDate?.slice(5, 7)
+      : r.status === "취소" ? r.cancelDate?.slice(5, 7) || r.date?.slice(5, 7)
       : r.status === "진행중" ? todayMonth
       : r.date?.slice(5, 7);
     const filtered =
@@ -3278,6 +3307,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
       const done = (a) =>
         a.filter((r) => r.status === "수주" || r.status === "실주");
       const prog = (a) => a.filter((r) => r.status === "진행중");
+      const cancel = (a) => a.filter((r) => r.status === "취소");
       const amt = (a) => a.reduce((s, r) => s + (r.amount || 0), 0);
       return {
         name,
@@ -3288,18 +3318,21 @@ function IndividualStatsView({ records, members, selectedYear }) {
           done(mr).length > 0 ? (won(mr).length / done(mr).length) * 100 : null,
         winAmt: amt(won(mr)),
         inProg: prog(mr).length,
+        canceled: cancel(mr).length,
         ps_done: done(ps).length,
         ps_wins: won(ps).length,
         ps_rate:
           done(ps).length > 0 ? (won(ps).length / done(ps).length) * 100 : null,
         ps_amt: amt(won(ps)),
         ps_prog: prog(ps).length,
+        ps_cancel: cancel(ps).length,
         pt_done: done(pt).length,
         pt_wins: won(pt).length,
         pt_rate:
           done(pt).length > 0 ? (won(pt).length / done(pt).length) * 100 : null,
         pt_amt: amt(won(pt)),
         pt_prog: prog(pt).length,
+        pt_cancel: cancel(pt).length,
       };
     });
   }, [records, members, filterMonth]);
@@ -3382,7 +3415,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
                 성명
               </th>
               <th
-                colSpan={6}
+                colSpan={7}
                 style={{
                   ...hStyle,
                   background: ACCENT.blue + "10",
@@ -3392,7 +3425,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
                 총계
               </th>
               <th
-                colSpan={5}
+                colSpan={6}
                 style={{
                   ...hStyle,
                   background: ACCENT.green + "10",
@@ -3403,7 +3436,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
                 제안서
               </th>
               <th
-                colSpan={5}
+                colSpan={6}
                 style={{
                   ...hStyle,
                   background: ACCENT.cyan + "10",
@@ -3422,12 +3455,13 @@ function IndividualStatsView({ records, members, selectedYear }) {
                 "수주율",
                 "수주금액(억)",
                 "진행중",
+                "취소",
               ].map((h) => (
                 <th key={"t" + h} style={h2Style}>
                   {h}
                 </th>
               ))}
-              {["완료", "수주건수", "수주율", "수주금액(억)", "진행중"].map(
+              {["완료", "수주건수", "수주율", "수주금액(억)", "진행중", "취소"].map(
                 (h) => (
                   <th
                     key={"p" + h}
@@ -3441,7 +3475,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
                   </th>
                 ),
               )}
-              {["완료", "수주건수", "수주율", "수주금액(억)", "진행중"].map(
+              {["완료", "수주건수", "수주율", "수주금액(억)", "진행중", "취소"].map(
                 (h) => (
                   <th
                     key={"b" + h}
@@ -3490,6 +3524,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
                 </td>
                 <td style={cStyle}>{fmt(d.winAmt)}</td>
                 <td style={cStyle}>{d.inProg}</td>
+                <td style={cStyle}>{d.canceled}</td>
                 <td style={{ ...cStyle, borderLeft: `2px solid ${NAVY[100]}` }}>
                   {d.ps_done}
                 </td>
@@ -3499,6 +3534,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
                 </td>
                 <td style={cStyle}>{fmt(d.ps_amt)}</td>
                 <td style={cStyle}>{d.ps_prog}</td>
+                <td style={cStyle}>{d.ps_cancel}</td>
                 <td style={{ ...cStyle, borderLeft: `2px solid ${NAVY[100]}` }}>
                   {d.pt_done}
                 </td>
@@ -3508,6 +3544,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
                 </td>
                 <td style={cStyle}>{fmt(d.pt_amt)}</td>
                 <td style={cStyle}>{d.pt_prog}</td>
+                <td style={cStyle}>{d.pt_cancel}</td>
               </tr>
             ))}
           </tbody>
@@ -3906,19 +3943,17 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
     const todayMonth = new Date().toISOString().slice(5, 7);
     const getMonth = (r) =>
       r.status === "수주" || r.status === "실주" ? r.submitDate?.slice(5, 7)
+      : r.status === "취소" ? r.cancelDate?.slice(5, 7) || r.date?.slice(5, 7)
       : r.status === "진행중" ? todayMonth
       : r.date?.slice(5, 7);
-    const rows = MONTHS.map((m) => {
-      const mr = merged.filter((r) => getMonth(r) === m);
-      const ps = mr.filter((r) => r.mergedType.includes("제안서"));
-      const pt = mr.filter((r) => r.mergedType.includes("발표"));
+    const calcStats = (mr, ps, pt) => {
       const won = (a) => a.filter((r) => r.status === "수주");
       const done = (a) =>
         a.filter((r) => r.status === "수주" || r.status === "실주");
       const prog = (a) => a.filter((r) => r.status === "진행중");
+      const cancel = (a) => a.filter((r) => r.status === "취소");
       const amt = (a) => a.reduce((s, r) => s + (r.amount || 0), 0);
       return {
-        month: m,
         total: mr.length,
         evalDone: done(mr).length,
         wins: won(mr).length,
@@ -3926,52 +3961,33 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
           done(mr).length > 0 ? (won(mr).length / done(mr).length) * 100 : null,
         winAmt: amt(won(mr)),
         inProg: prog(mr).length,
+        canceled: cancel(mr).length,
         ps_done: done(ps).length,
         ps_wins: won(ps).length,
         ps_rate:
           done(ps).length > 0 ? (won(ps).length / done(ps).length) * 100 : null,
         ps_amt: amt(won(ps)),
         ps_prog: prog(ps).length,
+        ps_cancel: cancel(ps).length,
         pt_done: done(pt).length,
         pt_wins: won(pt).length,
         pt_rate:
           done(pt).length > 0 ? (won(pt).length / done(pt).length) * 100 : null,
         pt_amt: amt(won(pt)),
         pt_prog: prog(pt).length,
+        pt_cancel: cancel(pt).length,
       };
+    };
+    const rows = MONTHS.map((m) => {
+      const mr = merged.filter((r) => getMonth(r) === m);
+      const ps = mr.filter((r) => r.mergedType.includes("제안서"));
+      const pt = mr.filter((r) => r.mergedType.includes("발표"));
+      return { month: m, ...calcStats(mr, ps, pt) };
     });
     const all = merged;
     const ps = all.filter((r) => r.mergedType.includes("제안서"));
     const pt = all.filter((r) => r.mergedType.includes("발표"));
-    const won = (a) => a.filter((r) => r.status === "수주");
-    const done = (a) =>
-      a.filter((r) => r.status === "수주" || r.status === "실주");
-    const prog = (a) => a.filter((r) => r.status === "진행중");
-    const amt = (a) => a.reduce((s, r) => s + (r.amount || 0), 0);
-    const totals = {
-      month: "계",
-      total: all.length,
-      evalDone: done(all).length,
-      wins: won(all).length,
-      winRate:
-        done(all).length > 0
-          ? (won(all).length / done(all).length) * 100
-          : null,
-      winAmt: amt(won(all)),
-      inProg: prog(all).length,
-      ps_done: done(ps).length,
-      ps_wins: won(ps).length,
-      ps_rate:
-        done(ps).length > 0 ? (won(ps).length / done(ps).length) * 100 : null,
-      ps_amt: amt(won(ps)),
-      ps_prog: prog(ps).length,
-      pt_done: done(pt).length,
-      pt_wins: won(pt).length,
-      pt_rate:
-        done(pt).length > 0 ? (won(pt).length / done(pt).length) * 100 : null,
-      pt_amt: amt(won(pt)),
-      pt_prog: prog(pt).length,
-    };
+    const totals = { month: "계", ...calcStats(all, ps, pt) };
     return { rows, totals };
   }, [merged]);
 
@@ -4038,6 +4054,7 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
       </td>
       <td style={cStyle}>{fmt(d.winAmt)}</td>
       <td style={cStyle}>{d.inProg}</td>
+      <td style={cStyle}>{d.canceled}</td>
       <td style={{ ...cStyle, borderLeft: `2px solid ${NAVY[100]}` }}>
         {d.ps_done}
       </td>
@@ -4047,6 +4064,7 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
       </td>
       <td style={cStyle}>{fmt(d.ps_amt)}</td>
       <td style={cStyle}>{d.ps_prog}</td>
+      <td style={cStyle}>{d.ps_cancel}</td>
       <td style={{ ...cStyle, borderLeft: `2px solid ${NAVY[100]}` }}>
         {d.pt_done}
       </td>
@@ -4056,6 +4074,7 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
       </td>
       <td style={cStyle}>{fmt(d.pt_amt)}</td>
       <td style={cStyle}>{d.pt_prog}</td>
+      <td style={cStyle}>{d.pt_cancel}</td>
     </tr>
   );
 
@@ -4088,7 +4107,7 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
                 월
               </th>
               <th
-                colSpan={6}
+                colSpan={7}
                 style={{
                   ...hStyle,
                   background: ACCENT.blue + "10",
@@ -4098,7 +4117,7 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
                 총계
               </th>
               <th
-                colSpan={5}
+                colSpan={6}
                 style={{
                   ...hStyle,
                   background: ACCENT.green + "10",
@@ -4109,7 +4128,7 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
                 제안서
               </th>
               <th
-                colSpan={5}
+                colSpan={6}
                 style={{
                   ...hStyle,
                   background: ACCENT.cyan + "10",
@@ -4128,12 +4147,13 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
                 "수주율",
                 "수주금액(억)",
                 "진행중",
+                "취소",
               ].map((h) => (
                 <th key={"t" + h} style={h2Style}>
                   {h}
                 </th>
               ))}
-              {["완료", "수주건수", "수주율", "수주금액(억)", "진행중"].map(
+              {["완료", "수주건수", "수주율", "수주금액(억)", "진행중", "취소"].map(
                 (h) => (
                   <th
                     key={"p" + h}
@@ -4147,7 +4167,7 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
                   </th>
                 ),
               )}
-              {["완료", "수주건수", "수주율", "수주금액(억)", "진행중"].map(
+              {["완료", "수주건수", "수주율", "수주금액(억)", "진행중", "취소"].map(
                 (h) => (
                   <th
                     key={"b" + h}
@@ -4418,7 +4438,7 @@ function ReportView({ stats, records, kcaData, members }) {
             paddingLeft: 4,
           }}
         >
-          개인별 수주 실적
+          개인별 실적
         </h3>
         <table
           style={{
