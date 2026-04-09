@@ -73,9 +73,12 @@ export async function upsertRecord(record) {
 }
 
 export async function deleteRecord(id) {
-  if (!supabase) return;
-  const { error } = await supabase.from("records").delete().eq("id", String(id));
-  if (error) console.error("[DB] deleteRecord:", error.message);
+  if (!supabase) { console.warn("[DB] supabase not configured"); return; }
+  const strId = String(id);
+  console.log("[DB] deleteRecord id:", strId, "type:", typeof strId);
+  const { data, error } = await supabase.from("records").delete().eq("id", strId).select();
+  if (error) console.error("[DB] deleteRecord error:", error.message);
+  else console.log("[DB] deleteRecord result:", data);
 }
 
 export async function upsertRecords(records) {
