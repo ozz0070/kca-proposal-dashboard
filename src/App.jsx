@@ -272,6 +272,7 @@ function computeStats(records, filterMonth, members) {
     const done = (arr) =>
       arr.filter((r) => r.status === "수주" || r.status === "실주");
     const prog = (arr) => arr.filter((r) => r.status === "진행중");
+    const cancel = (arr) => arr.filter((r) => r.status === "취소");
     const amt = (arr) => arr.reduce((s, r) => s + (r.amount || 0), 0);
     return {
       name,
@@ -282,6 +283,7 @@ function computeStats(records, filterMonth, members) {
         done(mr).length > 0 ? (won(mr).length / done(mr).length) * 100 : null,
       winAmt: amt(won(mr)),
       inProgress: prog(mr).length,
+      canceled: cancel(mr).length,
       ps_total: ps.length,
       ps_done: done(ps).length,
       ps_wins: won(ps).length,
@@ -2398,9 +2400,6 @@ function DataEntryView({
         }}
       >
         <div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: NAVY[700] }}>
-            제안 업무현황
-          </h3>
           <p style={{ fontSize: 13, color: NAVY[300], marginTop: 2 }}>
             총 {records.length}건 등록
           </p>
@@ -3377,14 +3376,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
           alignItems: "center",
         }}
       >
-        <div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: NAVY[700] }}>
-            개인별 수주율
-          </h3>
-          <p style={{ fontSize: 13, color: NAVY[300], marginTop: 2 }}>
-            사용자 {members.length}명
-          </p>
-        </div>
+        <div></div>
         <Select
           value={filterMonth}
           onChange={setFilterMonth}
@@ -3634,9 +3626,6 @@ function TeamStatsView({ records, selectedYear }) {
         }}
       >
         <div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: NAVY[700] }}>
-            팀 실적
-          </h3>
           <p style={{ fontSize: 13, color: NAVY[300], marginTop: 2 }}>
             총 {merged.length}건 (중복 제거)
           </p>
@@ -4080,14 +4069,7 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div>
-        <h3 style={{ fontSize: 18, fontWeight: 700, color: NAVY[700] }}>
-          팀 월별 실적
-        </h3>
-        <p style={{ fontSize: 13, color: NAVY[300], marginTop: 2 }}>
-          중복 제거 기준 · 제안서+발표 복합 유형 포함
-        </p>
-      </div>
+      <div></div>
 
       <div
         style={{
@@ -4448,6 +4430,10 @@ function ReportView({ stats, records, kcaData, members }) {
             marginBottom: 32,
           }}
         >
+          {(() => {
+            const indivData = stats.individual.filter((m) => !viewerNames.includes(m.name));
+            const hasCancel = indivData.some((m) => m.canceled > 0);
+            return (<>
           <thead>
             <tr>
               <th style={rthStyle}>성명</th>
@@ -4457,10 +4443,11 @@ function ReportView({ stats, records, kcaData, members }) {
               <th style={rthStyle}>수주율</th>
               <th style={rthStyle}>수주금액(억)</th>
               <th style={rthStyle}>진행중</th>
+              {hasCancel && <th style={rthStyle}>취소</th>}
             </tr>
           </thead>
           <tbody>
-            {stats.individual.filter((m) => !viewerNames.includes(m.name)).map((m, i) => (
+            {indivData.map((m, i) => (
               <tr
                 key={m.name}
                 style={{ background: i % 2 === 0 ? "white" : NAVY[50] + "50" }}
@@ -4495,9 +4482,12 @@ function ReportView({ stats, records, kcaData, members }) {
                 <td style={{ ...rtdStyle, textAlign: "center" }}>
                   {m.inProgress}
                 </td>
+                {hasCancel && <td style={{ ...rtdStyle, textAlign: "center" }}>{m.canceled}</td>}
               </tr>
             ))}
           </tbody>
+            </>);
+          })()}
         </table>
 
         {/* Recent Projects */}
@@ -5785,9 +5775,6 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
         }}
       >
         <div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: NAVY[700] }}>
-            제안서 리뷰
-          </h3>
           <p style={{ fontSize: 13, color: NAVY[300], marginTop: 2 }}>
             총 {records.length}건 등록
           </p>
@@ -6597,14 +6584,7 @@ function ScheduleView({ schedules, onAdd, onDelete, onUpdate, currentUser }) {
           alignItems: "center",
         }}
       >
-        <div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: NAVY[700] }}>
-            일정
-          </h3>
-          <p style={{ fontSize: 13, color: NAVY[300], marginTop: 2 }}>
-            기간을 선택하여 업무를 등록하세요
-          </p>
-        </div>
+        <div></div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {selectStart && (
             <p style={{ fontSize: 12, color: ACCENT.blue, fontWeight: 600 }}>
