@@ -6227,6 +6227,16 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                         style={{
                           fontSize: 13,
                           fontWeight: 600,
+                          color: ACCENT.blue,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {r.client}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 600,
                           color: NAVY[700],
                           overflow: "hidden",
                           textOverflow: "ellipsis",
