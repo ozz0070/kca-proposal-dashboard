@@ -2260,6 +2260,7 @@ function DataEntryView({
   const [copyMode, setCopyMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterMonth, setFilterMonth] = useState("전체");
+  const [filterStatus, setFilterStatus] = useState("전체");
 
   const selectedRecord = records.find((r) => r.id === selectedId);
 
@@ -2282,7 +2283,7 @@ function DataEntryView({
       ...form,
       amount: parseFloat(form.amount) || 0,
       month,
-      id: Date.now(),
+      id: crypto.randomUUID(),
     });
     setForm(empty);
     setShowForm(false);
@@ -2437,6 +2438,18 @@ function DataEntryView({
             options={[
               { value: "전체", label: "전체" },
               ...MONTHS.map((m) => ({ value: m, label: `${m}월` })),
+            ]}
+            style={{ minWidth: 100 }}
+          />
+          <Select
+            value={filterStatus}
+            onChange={(v) => {
+              setFilterStatus(v);
+              setPage(1);
+            }}
+            options={[
+              { value: "전체", label: "전체" },
+              ...STATUS_OPTIONS.map((s) => ({ value: s, label: s })),
             ]}
             style={{ minWidth: 100 }}
           />
@@ -2913,15 +2926,19 @@ function DataEntryView({
             filterMonth === "전체"
               ? records
               : records.filter((r) => r.status === "수주" || r.status === "실주" ? r.submitDate?.slice(5, 7) === filterMonth : r.date?.slice(5, 7) === filterMonth);
+          const statusFiltered =
+            filterStatus === "전체"
+              ? monthFiltered
+              : monthFiltered.filter((r) => r.status === filterStatus);
           const term = searchTerm.trim().toLowerCase();
           const filtered = term
-            ? monthFiltered.filter(
+            ? statusFiltered.filter(
                 (r) =>
                   r.project?.toLowerCase().includes(term) ||
                   r.member?.toLowerCase().includes(term) ||
                   r.client?.toLowerCase().includes(term),
               )
-            : monthFiltered;
+            : statusFiltered;
           const sorted = filtered
             .slice()
             .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
@@ -2932,7 +2949,7 @@ function DataEntryView({
 
           return (
             <>
-              {(term || filterMonth !== "전체") && (
+              {(term || filterMonth !== "전체" || filterStatus !== "전체") && (
                 <p
                   style={{
                     fontSize: 12,
@@ -5659,7 +5676,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
       ...form,
       amount: parseFloat(form.amount) || 0,
       month,
-      id: Date.now(),
+      id: crypto.randomUUID(),
     });
     setForm(empty);
     setShowForm(false);
@@ -6139,7 +6156,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                   r.client?.toLowerCase().includes(term),
               )
             : monthFiltered;
-          const sorted = filtered.slice().reverse();
+          const sorted = filtered.slice().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
           const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
           const safePage = Math.min(page, totalPages);
           const paged = sorted.slice(
@@ -6424,7 +6441,7 @@ function ScheduleView({ schedules, onAdd, onDelete, onUpdate, currentUser }) {
     if (category !== "휴가" && !task.trim()) return;
     if (!selectStart || !selectEnd) return;
     onAdd({
-      id: Date.now(),
+      id: crypto.randomUUID(),
       start: selectStart,
       end: selectEnd,
       task: task.trim(),
