@@ -1271,7 +1271,7 @@ function RecordDetail({
     if (isWonLost && !form.leader) missing.push("총괄");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
-    if (!form.amount && form.amount !== 0) missing.push("금액(억)");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액");
     if (isWonLost && (!form.submitDate || form.submitDate === "사전공고")) missing.push("제출일");
     if (missing.length > 0) {
       setWarning(`${missing.join(", ")}을(를) 입력해주세요.`);
@@ -1283,7 +1283,7 @@ function RecordDetail({
 
   const handleSave = () => {
     const month = form.date.slice(5, 7);
-    onUpdate({ ...form, amount: parseFloat(form.amount) || 0, month });
+    onUpdate({ ...form, amount: parseFloat(form.amount) || 0, amount_vat: parseFloat(form.amount_vat) || 0, month });
     setShowSaveConfirm(false);
     setEditing(false);
   };
@@ -1978,11 +1978,17 @@ function RecordDetail({
                 required
               />
               <Input
-                label="금액(억)"
+                label="투찰금액"
                 type="number"
                 value={form.amount}
                 onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
                 required
+              />
+              <Input
+                label="공고금액"
+                type="number"
+                value={form.amount_vat}
+                onChange={(v) => setForm((p) => ({ ...p, amount_vat: v }))}
               />
               <SubmitDateInput
                 value={form.submitDate || "사전공고"}
@@ -2131,7 +2137,7 @@ function RecordDetail({
               <Field label="프로젝트명">
                 <FieldValue value={record.project} />
               </Field>
-              <Field label="금액(억)">
+              <Field label="투찰금액">
                 <p
                   style={{
                     fontSize: 24,
@@ -2141,6 +2147,28 @@ function RecordDetail({
                   }}
                 >
                   {fmt(record.amount)}
+                  <span
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 500,
+                      color: NAVY[400],
+                      marginLeft: 4,
+                    }}
+                  >
+                    억
+                  </span>
+                </p>
+              </Field>
+              <Field label="공고금액">
+                <p
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 800,
+                    color: NAVY[700],
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}
+                >
+                  {fmt(record.amount_vat)}
                   <span
                     style={{
                       fontSize: 14,
@@ -2246,6 +2274,7 @@ function DataEntryView({
     project: "",
     client: "",
     amount: "",
+    amount_vat: "",
     status: STATUS_OPTIONS[0],
     submitDate: "사전공고",
     assistants: [],
@@ -2271,7 +2300,7 @@ function DataEntryView({
     if (isWonLost && !form.leader) missing.push("총괄");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
-    if (!form.amount && form.amount !== 0) missing.push("금액(억)");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액");
     if (isWonLost && (!form.submitDate || form.submitDate === "사전공고")) missing.push("제출일");
     if (missing.length > 0) {
       setFormWarning(`${missing.join(", ")}을(를) 입력해주세요.`);
@@ -2282,6 +2311,7 @@ function DataEntryView({
     onAdd({
       ...form,
       amount: parseFloat(form.amount) || 0,
+      amount_vat: parseFloat(form.amount_vat) || 0,
       month,
       id: crypto.randomUUID(),
     });
@@ -2710,7 +2740,7 @@ function DataEntryView({
                     marginBottom: 4,
                   }}
                 >
-                  금액(억)
+                  투찰금액
                 </label>
                 <p
                   style={{
@@ -2725,7 +2755,7 @@ function DataEntryView({
               </div>
             ) : (
               <Input
-                label="금액(억)"
+                label="투찰금액"
                 type="number"
                 value={form.amount}
                 onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
@@ -2733,6 +2763,13 @@ function DataEntryView({
                 required
               />
             )}
+            <Input
+              label="공고금액"
+              type="number"
+              value={form.amount_vat || ""}
+              onChange={(v) => setForm((p) => ({ ...p, amount_vat: v }))}
+              placeholder="0.00"
+            />
             {copyMode ? (
               <div
                 style={{
@@ -3684,7 +3721,7 @@ function TeamStatsView({ records, selectedYear }) {
         >
           <thead>
             <tr style={{ background: NAVY[50] }}>
-              {["사업명", "금액(억)", "유형", "상태", "배정일", "제출일"].map(
+              {["사업명", "투찰금액", "유형", "상태", "배정일", "제출일"].map(
                 (h) => (
                   <th
                     key={h}
@@ -4464,7 +4501,7 @@ function ReportView({ stats, records, kcaData, members }) {
         >
           <thead>
             <tr>
-              {["프로젝트명", "발주기관", "담당자", "유형", "금액(억)"].map(
+              {["프로젝트명", "발주기관", "담당자", "유형", "투찰금액"].map(
                 (h) => (
                   <th key={h} style={rthStyle}>
                     {h}
@@ -5085,7 +5122,7 @@ function ReviewDetail({
     if (!form.date) missing.push("날짜");
     if (!form.member) missing.push("담당자");
     if (!form.author || !form.author.trim()) missing.push("제안 작성자");
-    if (!form.amount && form.amount !== 0) missing.push("금액(억)");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
     if (missing.length > 0) {
@@ -5098,7 +5135,7 @@ function ReviewDetail({
 
   const handleSave = () => {
     const month = form.date.slice(5, 7);
-    onUpdate({ ...form, amount: parseFloat(form.amount) || 0, month });
+    onUpdate({ ...form, amount: parseFloat(form.amount) || 0, amount_vat: parseFloat(form.amount_vat) || 0, month });
     setShowSaveConfirm(false);
     setEditing(false);
   };
@@ -5434,7 +5471,7 @@ function ReviewDetail({
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gridTemplateColumns: "1fr 1fr",
                 gap: 16,
               }}
             >
@@ -5444,7 +5481,6 @@ function ReviewDetail({
                 type="date"
                 value={form.date}
                 onChange={(v) => setForm((p) => ({ ...p, date: v }))}
-                required
               />
               <Select
                 label="담당자"
@@ -5453,12 +5489,14 @@ function ReviewDetail({
                 onChange={(v) => setForm((p) => ({ ...p, member: v }))}
                 options={members}
               />
-              <Select
-                label="유형"
-                value={form.type}
-                onChange={(v) => setForm((p) => ({ ...p, type: v }))}
-                options={REVIEW_TYPES}
-              />
+              <div style={{ gridColumn: "span 2" }}>
+                <Select
+                  label="유형"
+                  value={form.type}
+                  onChange={(v) => setForm((p) => ({ ...p, type: v }))}
+                  options={REVIEW_TYPES}
+                />
+              </div>
               <Input
                 label="제안 작성자"
                 required
@@ -5473,11 +5511,17 @@ function ReviewDetail({
                 placeholder="감리 총괄"
               />
               <Input
-                label="금액(억)"
+                label="투찰금액"
                 required
                 type="number"
                 value={form.amount}
                 onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
+              />
+              <Input
+                label="공고금액"
+                type="number"
+                value={form.amount_vat || ""}
+                onChange={(v) => setForm((p) => ({ ...p, amount_vat: v }))}
               />
               <ClientSearchInput
                 label="발주기관"
@@ -5492,8 +5536,6 @@ function ReviewDetail({
                 required
                 value={form.project}
                 onChange={(v) => setForm((p) => ({ ...p, project: v }))}
-                required
-                style={{ gridColumn: "span 2" }}
               />
             </div>
             {warning && (
@@ -5570,16 +5612,18 @@ function ReviewDetail({
             <Field label="담당자">
               <FieldValue value={record.member} />
             </Field>
-            <Field label="유형">
-              <FieldValue value={record.type} />
-            </Field>
+            <div style={{ gridColumn: "span 2" }}>
+              <Field label="유형">
+                <FieldValue value={record.type} />
+              </Field>
+            </div>
             <Field label="제안 작성자">
               <FieldValue value={record.author || "—"} />
             </Field>
             <Field label="총괄">
               <FieldValue value={record.leader || "—"} />
             </Field>
-            <Field label="금액(억)">
+            <Field label="투찰금액">
               <p
                 style={{
                   fontSize: 24,
@@ -5601,33 +5645,34 @@ function ReviewDetail({
                 </span>
               </p>
             </Field>
+            <Field label="공고금액">
+              <p
+                style={{
+                  fontSize: 24,
+                  fontWeight: 800,
+                  color: NAVY[700],
+                  fontFamily: "'JetBrains Mono', monospace",
+                }}
+              >
+                {fmt(record.amount_vat)}
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: NAVY[400],
+                    marginLeft: 4,
+                  }}
+                >
+                  억
+                </span>
+              </p>
+            </Field>
             <Field label="발주기관">
               <FieldValue value={record.client} />
             </Field>
-            <div style={{ gridColumn: "span 2", marginBottom: 20 }}>
-              <p
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: NAVY[300],
-                  letterSpacing: 1,
-                  textTransform: "uppercase",
-                  marginBottom: 6,
-                }}
-              >
-                프로젝트명
-              </p>
-              <p
-                style={{
-                  fontSize: 15,
-                  fontWeight: 500,
-                  color: NAVY[700],
-                  lineHeight: 1.5,
-                }}
-              >
-                {record.project}
-              </p>
-            </div>
+            <Field label="프로젝트명">
+              <FieldValue value={record.project} />
+            </Field>
           </div>
         )}
       </div>
@@ -5646,6 +5691,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
     project: "",
     client: "",
     amount: "",
+    amount_vat: "",
   };
   const [form, setForm] = useState(empty);
   const [showForm, setShowForm] = useState(false);
@@ -5663,7 +5709,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
     if (!form.date) missing.push("날짜");
     if (!form.member) missing.push("담당자");
     if (!form.author || !form.author.trim()) missing.push("제안 작성자");
-    if (!form.amount && form.amount !== 0) missing.push("금액(억)");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
     if (missing.length > 0) {
@@ -5675,6 +5721,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
     onAdd({
       ...form,
       amount: parseFloat(form.amount) || 0,
+      amount_vat: parseFloat(form.amount_vat) || 0,
       month,
       id: crypto.randomUUID(),
     });
@@ -5869,7 +5916,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gridTemplateColumns: "1fr 1fr",
               gap: 16,
             }}
           >
@@ -5904,7 +5951,6 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                 type="date"
                 value={form.date}
                 onChange={(v) => setForm((p) => ({ ...p, date: v }))}
-                required
               />
             )}
             <Select
@@ -5917,12 +5963,14 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                 ...members.map((m) => ({ value: m, label: m })),
               ]}
             />
-            <Select
-              label="유형"
-              value={form.type}
-              onChange={(v) => setForm((p) => ({ ...p, type: v }))}
-              options={REVIEW_TYPES}
-            />
+            <div style={{ gridColumn: "span 2" }}>
+              <Select
+                label="유형"
+                value={form.type}
+                onChange={(v) => setForm((p) => ({ ...p, type: v }))}
+                options={REVIEW_TYPES}
+              />
+            </div>
             <Input
               label="제안 작성자"
               required
@@ -5980,7 +6028,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                     marginBottom: 4,
                   }}
                 >
-                  금액(억)<span style={{ color: ACCENT.red }}> *</span>
+                  투찰금액<span style={{ color: ACCENT.red }}> *</span>
                 </label>
                 <p
                   style={{
@@ -5995,7 +6043,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
               </div>
             ) : (
               <Input
-                label="금액(억)"
+                label="투찰금액"
                 required
                 type="number"
                 value={form.amount}
@@ -6003,6 +6051,13 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                 placeholder="0.00"
               />
             )}
+            <Input
+              label="공고금액"
+              type="number"
+              value={form.amount_vat || ""}
+              onChange={(v) => setForm((p) => ({ ...p, amount_vat: v }))}
+              placeholder="0.00"
+            />
             {copyMode ? (
               <div
                 style={{
@@ -6040,7 +6095,6 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
             {copyMode ? (
               <div
                 style={{
-                  gridColumn: "span 2",
                   padding: "10px 14px",
                   borderRadius: 12,
                   background: NAVY[50],
@@ -6069,7 +6123,6 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                 value={form.project}
                 onChange={(v) => setForm((p) => ({ ...p, project: v }))}
                 placeholder="사업명 입력"
-                style={{ gridColumn: "span 2" }}
               />
             )}
           </div>
@@ -8938,6 +8991,7 @@ export default function App() {
     "client",
     "project",
     "amount",
+    "amount_vat",
     "submitDate",
   ];
   const addRecord = (r) => {
@@ -8970,7 +9024,7 @@ export default function App() {
       return result;
     });
 
-  const REVIEW_SHARED = ["author", "leader", "client", "project", "amount"];
+  const REVIEW_SHARED = ["author", "leader", "client", "project", "amount", "amount_vat"];
   const addReview = (r) => {
     setReviews((prev) => [...prev, r]);
     db.upsertReview(r);
