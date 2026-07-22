@@ -6519,7 +6519,6 @@ function ReviewTargetDetail({
 
   const trySave = () => {
     const missing = [];
-    if (!form.member) missing.push("담당자");
     if (!form.date) missing.push("제출일");
     if (!form.author || !form.author.trim()) missing.push("제안 리더");
     if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
@@ -6878,10 +6877,9 @@ function ReviewTargetDetail({
               <div style={{ gridColumn: "1 / -1" }}>
                 <Select
                   label="담당자"
-                  required
                   value={form.member || ""}
                   onChange={(v) => setForm((p) => ({ ...p, member: v }))}
-                  options={members}
+                  options={[{ value: "", label: "-- 선택 --" }, ...members.map((m) => typeof m === "string" ? { value: m, label: m } : m)]}
                 />
               </div>
               <div>
@@ -7202,7 +7200,7 @@ function ReviewTargetDetail({
 function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients, currentUser, onNavigateToClients, onReview, reviews, onNavigateToReview }) {
   const empty = {
     date: new Date().toISOString().slice(0, 10),
-    member: currentUser?.name || "",
+    member: "",
     is_close: "N",
     author: "",
     leader: "",
@@ -7224,7 +7222,6 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
 
   const handleSubmit = () => {
     const missing = [];
-    if (!form.member) missing.push("담당자");
     if (!form.date) missing.push("제출일");
     if (!form.author || !form.author.trim()) missing.push("제안 리더");
     if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
@@ -7430,10 +7427,9 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
             <div style={{ gridColumn: "1 / -1" }}>
               <Select
                 label="담당자"
-                required
                 value={form.member || ""}
                 onChange={(v) => setForm((p) => ({ ...p, member: v }))}
-                options={members}
+                options={[{ value: "", label: "-- 선택 --" }, ...members.map((m) => typeof m === "string" ? { value: m, label: m } : m)]}
               />
             </div>
             <div>
