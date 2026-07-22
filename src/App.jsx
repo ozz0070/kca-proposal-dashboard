@@ -6365,7 +6365,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                         flexShrink: 0,
                       }}
                     >
-                      {fmt(r.amount)}
+                      {fmt(r.amount_vat)}
                       <span
                         style={{
                           fontSize: 11,
@@ -7695,7 +7695,7 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
                         flexShrink: 0,
                       }}
                     >
-                      {fmt(r.amount)}
+                      {fmt(r.amount_vat)}
                       <span
                         style={{
                           fontSize: 11,
