@@ -152,6 +152,12 @@ async function loadReviews() {
   const s = storageGet("kca-reviews-v1");
   return s || [];
 }
+async function loadReviewTargets() {
+  const r = await db.loadReviewTargets();
+  if (r && Array.isArray(r)) { useAPI = true; return r; }
+  const s = storageGet("kca-reviewtargets-v1");
+  return s || [];
+}
 async function loadSchedules() {
   const r = await db.loadSchedules();
   if (r && Array.isArray(r)) { useAPI = true; return r; }
@@ -1271,7 +1277,8 @@ function RecordDetail({
     if (isWonLost && !form.leader) missing.push("총괄");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
-    if (!form.amount && form.amount !== 0) missing.push("투찰금액");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
+    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억)");
     if (isWonLost && (!form.submitDate || form.submitDate === "사전공고")) missing.push("제출일");
     if (missing.length > 0) {
       setWarning(`${missing.join(", ")}을(를) 입력해주세요.`);
@@ -1978,14 +1985,15 @@ function RecordDetail({
                 required
               />
               <Input
-                label="투찰금액"
+                label="투찰금액(억)"
                 type="number"
                 value={form.amount}
                 onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
                 required
               />
               <Input
-                label="공고금액"
+                label="공고금액(억)"
+                required
                 type="number"
                 value={form.amount_vat}
                 onChange={(v) => setForm((p) => ({ ...p, amount_vat: v }))}
@@ -2137,7 +2145,7 @@ function RecordDetail({
               <Field label="프로젝트명">
                 <FieldValue value={record.project} />
               </Field>
-              <Field label="투찰금액">
+              <Field label="투찰금액(억)">
                 <p
                   style={{
                     fontSize: 24,
@@ -2159,7 +2167,7 @@ function RecordDetail({
                   </span>
                 </p>
               </Field>
-              <Field label="공고금액">
+              <Field label="공고금액(억)">
                 <p
                   style={{
                     fontSize: 24,
@@ -2300,7 +2308,8 @@ function DataEntryView({
     if (isWonLost && !form.leader) missing.push("총괄");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
-    if (!form.amount && form.amount !== 0) missing.push("투찰금액");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
+    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억)");
     if (isWonLost && (!form.submitDate || form.submitDate === "사전공고")) missing.push("제출일");
     if (missing.length > 0) {
       setFormWarning(`${missing.join(", ")}을(를) 입력해주세요.`);
@@ -2740,7 +2749,7 @@ function DataEntryView({
                     marginBottom: 4,
                   }}
                 >
-                  투찰금액
+                  투찰금액(억)
                 </label>
                 <p
                   style={{
@@ -2755,7 +2764,7 @@ function DataEntryView({
               </div>
             ) : (
               <Input
-                label="투찰금액"
+                label="투찰금액(억)"
                 type="number"
                 value={form.amount}
                 onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
@@ -2764,7 +2773,8 @@ function DataEntryView({
               />
             )}
             <Input
-              label="공고금액"
+              label="공고금액(억)"
+              required
               type="number"
               value={form.amount_vat || ""}
               onChange={(v) => setForm((p) => ({ ...p, amount_vat: v }))}
@@ -3721,7 +3731,7 @@ function TeamStatsView({ records, selectedYear }) {
         >
           <thead>
             <tr style={{ background: NAVY[50] }}>
-              {["사업명", "투찰금액", "유형", "상태", "배정일", "제출일"].map(
+              {["사업명", "투찰금액(억)", "유형", "상태", "배정일", "제출일"].map(
                 (h) => (
                   <th
                     key={h}
@@ -4501,7 +4511,7 @@ function ReportView({ stats, records, kcaData, members }) {
         >
           <thead>
             <tr>
-              {["프로젝트명", "발주기관", "담당자", "유형", "투찰금액"].map(
+              {["프로젝트명", "발주기관", "담당자", "유형", "투찰금액(억)"].map(
                 (h) => (
                   <th key={h} style={rthStyle}>
                     {h}
@@ -5121,8 +5131,9 @@ function ReviewDetail({
     const missing = [];
     if (!form.date) missing.push("날짜");
     if (!form.member) missing.push("담당자");
-    if (!form.author || !form.author.trim()) missing.push("제안 작성자");
-    if (!form.amount && form.amount !== 0) missing.push("투찰금액");
+    if (!form.author || !form.author.trim()) missing.push("제안 리더");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
+    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억)");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
     if (missing.length > 0) {
@@ -5498,7 +5509,7 @@ function ReviewDetail({
                 />
               </div>
               <Input
-                label="제안 작성자"
+                label="제안 리더"
                 required
                 value={form.author || ""}
                 onChange={(v) => setForm((p) => ({ ...p, author: v }))}
@@ -5511,14 +5522,15 @@ function ReviewDetail({
                 placeholder="감리 총괄"
               />
               <Input
-                label="투찰금액"
+                label="투찰금액(억)"
                 required
                 type="number"
                 value={form.amount}
                 onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
               />
               <Input
-                label="공고금액"
+                label="공고금액(억)"
+                required
                 type="number"
                 value={form.amount_vat || ""}
                 onChange={(v) => setForm((p) => ({ ...p, amount_vat: v }))}
@@ -5617,13 +5629,13 @@ function ReviewDetail({
                 <FieldValue value={record.type} />
               </Field>
             </div>
-            <Field label="제안 작성자">
+            <Field label="제안 리더">
               <FieldValue value={record.author || "—"} />
             </Field>
             <Field label="총괄">
               <FieldValue value={record.leader || "—"} />
             </Field>
-            <Field label="투찰금액">
+            <Field label="투찰금액(억)">
               <p
                 style={{
                   fontSize: 24,
@@ -5645,7 +5657,7 @@ function ReviewDetail({
                 </span>
               </p>
             </Field>
-            <Field label="공고금액">
+            <Field label="공고금액(억)">
               <p
                 style={{
                   fontSize: 24,
@@ -5681,7 +5693,7 @@ function ReviewDetail({
 }
 
 // ─── Review View (제안서 리뷰) ───
-function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, currentUser, onNavigateToClients }) {
+function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, currentUser, onNavigateToClients, prefill, onClearPrefill }) {
   const empty = {
     date: new Date().toISOString().slice(0, 10),
     member: currentUser?.name || "",
@@ -5702,14 +5714,37 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
   const [searchTerm, setSearchTerm] = useState("");
   const [filterMonth, setFilterMonth] = useState("전체");
 
+  useEffect(() => {
+    if (prefill) {
+      setForm({
+        date: prefill.date || new Date().toISOString().slice(0, 10),
+        member: "",
+        type: REVIEW_TYPES[0],
+        author: prefill.author || "",
+        leader: prefill.leader || "",
+        project: prefill.project || "",
+        client: prefill.client || "",
+        amount: prefill.amount || "",
+        amount_vat: prefill.amount_vat || "",
+        id_parent: prefill.id || "",
+      });
+      setShowForm(true);
+      setSelectedId(null);
+      setCopyMode(false);
+      setPage(1);
+      onClearPrefill();
+    }
+  }, [prefill]);
+
   const selectedRecord = records.find((r) => r.id === selectedId);
 
   const handleSubmit = () => {
     const missing = [];
     if (!form.date) missing.push("날짜");
     if (!form.member) missing.push("담당자");
-    if (!form.author || !form.author.trim()) missing.push("제안 작성자");
-    if (!form.amount && form.amount !== 0) missing.push("투찰금액");
+    if (!form.author || !form.author.trim()) missing.push("제안 리더");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
+    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억)");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
     if (missing.length > 0) {
@@ -5754,6 +5789,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
               member: "",
               type: REVIEW_TYPES[0],
               groupId: gid,
+              id_parent: rec.id_parent || "",
             });
             setCopyMode(true);
             setShowForm(true);
@@ -5873,7 +5909,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
               setPage(1);
             }}
             options={[
-              { value: "전체", label: "전체" },
+              { value: "전체", label: "월" },
               ...MONTHS.map((m) => ({ value: m, label: `${m}월` })),
             ]}
             style={{ minWidth: 100 }}
@@ -5910,7 +5946,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                 marginBottom: 12,
               }}
             >
-              ※ 담당자, 유형, 제안 작성자만 수정 가능합니다
+              ※ 담당자, 유형, 제안 리더만 수정 가능합니다
             </p>
           )}
           <div
@@ -5972,7 +6008,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
               />
             </div>
             <Input
-              label="제안 작성자"
+              label="제안 리더"
               required
               value={form.author || ""}
               onChange={(v) => setForm((p) => ({ ...p, author: v }))}
@@ -6028,7 +6064,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                     marginBottom: 4,
                   }}
                 >
-                  투찰금액<span style={{ color: ACCENT.red }}> *</span>
+                  투찰금액(억)<span style={{ color: ACCENT.red }}> *</span>
                 </label>
                 <p
                   style={{
@@ -6043,7 +6079,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
               </div>
             ) : (
               <Input
-                label="투찰금액"
+                label="투찰금액(억)"
                 required
                 type="number"
                 value={form.amount}
@@ -6052,7 +6088,8 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
               />
             )}
             <Input
-              label="공고금액"
+              label="공고금액(억)"
+              required
               type="number"
               value={form.amount_vat || ""}
               onChange={(v) => setForm((p) => ({ ...p, amount_vat: v }))}
@@ -6278,6 +6315,16 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                       </span>
                       <span
                         style={{
+                          fontSize: 12,
+                          fontWeight: 500,
+                          color: NAVY[400],
+                          flexShrink: 0,
+                        }}
+                      >
+                        제안리더: {r.author || "—"}
+                      </span>
+                      <span
+                        style={{
                           fontSize: 13,
                           fontWeight: 600,
                           color: ACCENT.blue,
@@ -6308,6 +6355,1326 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                       style={{ fontSize: 12, color: NAVY[300], flexShrink: 0 }}
                     >
                       {fmtDate(r.date)}
+                    </span>
+                    <p
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: NAVY[600],
+                        fontFamily: "'JetBrains Mono', monospace",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {fmt(r.amount)}
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 500,
+                          color: NAVY[300],
+                        }}
+                      >
+                        {" "}
+                        억
+                      </span>
+                    </p>
+                    <ChevronRight
+                      size={18}
+                      color={NAVY[200]}
+                      style={{ flexShrink: 0 }}
+                    />
+                  </div>
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 4,
+                    marginTop: 20,
+                  }}
+                >
+                  <button
+                    onClick={() => setPage(1)}
+                    disabled={safePage === 1}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: `1px solid ${NAVY[100]}`,
+                      background: "white",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: safePage === 1 ? NAVY[200] : NAVY[500],
+                      cursor: safePage === 1 ? "default" : "pointer",
+                    }}
+                  >
+                    {"«"}
+                  </button>
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={safePage === 1}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: `1px solid ${NAVY[100]}`,
+                      background: "white",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: safePage === 1 ? NAVY[200] : NAVY[500],
+                      cursor: safePage === 1 ? "default" : "pointer",
+                    }}
+                  >
+                    {"‹"}
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: 8,
+                          border: "none",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          background: p === safePage ? NAVY[500] : "white",
+                          color: p === safePage ? "white" : NAVY[400],
+                          minWidth: 36,
+                        }}
+                      >
+                        {p}
+                      </button>
+                    ),
+                  )}
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safePage === totalPages}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: `1px solid ${NAVY[100]}`,
+                      background: "white",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: safePage === totalPages ? NAVY[200] : NAVY[500],
+                      cursor: safePage === totalPages ? "default" : "pointer",
+                    }}
+                  >
+                    {"›"}
+                  </button>
+                  <button
+                    onClick={() => setPage(totalPages)}
+                    disabled={safePage === totalPages}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: `1px solid ${NAVY[100]}`,
+                      background: "white",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: safePage === totalPages ? NAVY[200] : NAVY[500],
+                      cursor: safePage === totalPages ? "default" : "pointer",
+                    }}
+                  >
+                    {"»"}
+                  </button>
+                </div>
+              )}
+            </>
+          );
+        })()}
+    </div>
+  );
+}
+
+// ─── Review Target Detail (제안서 리뷰 대상 상세) ───
+const IS_CLOSE_OPTIONS = [
+  { value: "N", label: "진행중" },
+  { value: "Y", label: "마감" },
+];
+
+function ReviewTargetDetail({
+  record,
+  onClose,
+  onDelete,
+  onUpdate,
+  members,
+  clients,
+  currentUser,
+  onNavigateToClients,
+  onReview,
+  reviews,
+}) {
+  const canEdit = currentUser?.role !== "뷰어" && (currentUser?.role === "관리자");
+  const [editing, setEditing] = useState(false);
+  const toDateStr = (d) => (d ? String(d).slice(0, 10) : "");
+  const normalizeRecord = (r) => ({ ...r, date: toDateStr(r.date) });
+  const [form, setForm] = useState(normalizeRecord(record));
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [warning, setWarning] = useState("");
+
+  const trySave = () => {
+    const missing = [];
+    if (!form.date) missing.push("제출일");
+    if (!form.author || !form.author.trim()) missing.push("제안 리더");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
+    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억)");
+    if (!form.client) missing.push("발주기관");
+    if (!form.project) missing.push("프로젝트명");
+    if (missing.length > 0) {
+      setWarning(`${missing.join(", ")}을(를) 입력해주세요.`);
+      return;
+    }
+    setWarning("");
+    setShowSaveConfirm(true);
+  };
+
+  const handleSave = () => {
+    const month = form.date.slice(5, 7);
+    onUpdate({ ...form, amount: parseFloat(form.amount) || 0, amount_vat: parseFloat(form.amount_vat) || 0, month });
+    setShowSaveConfirm(false);
+    setEditing(false);
+  };
+
+  const Field = ({ label, children }) => (
+    <div style={{ marginBottom: 20 }}>
+      <p
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: NAVY[300],
+          letterSpacing: 1,
+          textTransform: "uppercase",
+          marginBottom: 6,
+        }}
+      >
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+  const FieldValue = ({ value }) => (
+    <p
+      style={{
+        fontSize: 15,
+        fontWeight: 500,
+        color: NAVY[700],
+        lineHeight: 1.5,
+      }}
+    >
+      {value}
+    </p>
+  );
+  const closeColor = record.is_close === "Y" ? ACCENT.red : ACCENT.green;
+
+  return (
+    <div
+      style={{
+        background: "white",
+        borderRadius: 20,
+        border: `1px solid ${NAVY[50]}`,
+        boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
+      {showDeleteConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(13,32,53,0.5)",
+              backdropFilter: "blur(4px)",
+            }}
+          />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "relative",
+              background: "white",
+              borderRadius: 20,
+              padding: 32,
+              width: 400,
+              maxWidth: "90vw",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+            }}
+          >
+            <h4
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: NAVY[700],
+                marginBottom: 8,
+              }}
+            >
+              삭제 확인
+            </h4>
+            <p style={{ fontSize: 14, color: NAVY[400], marginBottom: 24 }}>
+              이 리뷰 대상을 삭제하시겠습니까?
+            </p>
+            <div
+              style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}
+            >
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: 12,
+                  border: `1.5px solid ${NAVY[100]}`,
+                  background: "white",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: NAVY[400],
+                  cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  onDelete(record.id);
+                  setShowDeleteConfirm(false);
+                }}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: 12,
+                  border: "none",
+                  background: ACCENT.red,
+                  color: "white",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showSaveConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setShowSaveConfirm(false)}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(13,32,53,0.5)",
+              backdropFilter: "blur(4px)",
+            }}
+          />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "relative",
+              background: "white",
+              borderRadius: 20,
+              padding: 32,
+              width: 400,
+              maxWidth: "90vw",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+            }}
+          >
+            <h4
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: NAVY[700],
+                marginBottom: 8,
+              }}
+            >
+              저장 확인
+            </h4>
+            <p style={{ fontSize: 14, color: NAVY[400], marginBottom: 24 }}>
+              변경 사항을 저장하시겠습니까?
+            </p>
+            <div
+              style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}
+            >
+              <button
+                onClick={() => setShowSaveConfirm(false)}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: 12,
+                  border: `1.5px solid ${NAVY[100]}`,
+                  background: "white",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: NAVY[400],
+                  cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={handleSave}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "10px 24px",
+                  borderRadius: 12,
+                  border: "none",
+                  background: ACCENT.blue,
+                  color: "white",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <Check size={16} /> 저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <div
+        style={{
+          background: `linear-gradient(135deg, ${NAVY[700]}, ${NAVY[600]})`,
+          padding: "24px 28px",
+          position: "relative",
+        }}
+      >
+        <button
+          onClick={onClose}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "rgba(255,255,255,0.15)",
+            border: "none",
+            color: "white",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+            padding: "6px 14px",
+            borderRadius: 8,
+            marginBottom: 16,
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <ArrowLeft size={15} /> 목록으로
+        </button>
+        <h3
+          style={{
+            fontSize: 20,
+            fontWeight: 800,
+            color: "white",
+            lineHeight: 1.4,
+            paddingRight: 80,
+          }}
+        >
+          {record.project}
+        </h3>
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <span
+            style={{
+              background: closeColor + "30",
+              padding: "4px 12px",
+              borderRadius: 6,
+              fontSize: 12,
+              fontWeight: 600,
+              color: "white",
+            }}
+          >
+            {record.is_close === "Y" ? "마감" : "진행중"}
+          </span>
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            top: 24,
+            right: 24,
+            display: "flex",
+            gap: 8,
+          }}
+        >
+          {canEdit && (
+          <button
+            onClick={() => setEditing(!editing)}
+            style={{
+              background: "rgba(255,255,255,0.15)",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              padding: 8,
+              borderRadius: 8,
+            }}
+          >
+            <Pencil size={16} />
+          </button>
+          )}
+          {currentUser?.role !== "뷰어" && (
+          <button
+            onClick={() => onReview(record)}
+            style={{
+              background: "rgba(59,130,246,0.4)",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              padding: "6px 14px",
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            리뷰등록
+          </button>
+          )}
+          {canEdit && <button
+            onClick={() => setShowDeleteConfirm(true)}
+            style={{
+              background: "rgba(239,68,68,0.3)",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              padding: 8,
+              borderRadius: 8,
+            }}
+          >
+            <Trash2 size={16} />
+          </button>}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: 28 }}>
+        {editing ? (
+          <>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 16,
+              }}
+            >
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: NAVY[500] }}>제출일 <span style={{ color: ACCENT.red }}>*</span></span>
+                  <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: NAVY[400], cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={form.date === "사전규격"}
+                      onChange={(e) => setForm((p) => ({ ...p, date: e.target.checked ? "사전규격" : new Date().toISOString().slice(0, 10) }))}
+                    />
+                    사전규격
+                  </label>
+                </div>
+                {form.date === "사전규격" ? (
+                  <div style={{
+                    padding: "9px 14px",
+                    borderRadius: 12,
+                    border: `1.5px solid ${NAVY[100]}`,
+                    background: NAVY[50],
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: NAVY[500],
+                  }}>
+                    사전규격
+                  </div>
+                ) : (
+                  <Input
+                    type="date"
+                    value={form.date}
+                    onChange={(v) => setForm((p) => ({ ...p, date: v }))}
+                  />
+                )}
+              </div>
+              <Select
+                label="리뷰 마감"
+                value={form.is_close || "N"}
+                onChange={(v) => setForm((p) => ({ ...p, is_close: v }))}
+                options={IS_CLOSE_OPTIONS}
+              />
+              <Input
+                label="제안 리더"
+                required
+                value={form.author || ""}
+                onChange={(v) => setForm((p) => ({ ...p, author: v }))}
+                placeholder="작성자 입력"
+              />
+              <Input
+                label="총괄"
+                value={form.leader || ""}
+                onChange={(v) => setForm((p) => ({ ...p, leader: v }))}
+                placeholder="감리 총괄"
+              />
+              <Input
+                label="투찰금액(억)"
+                required
+                type="number"
+                value={form.amount}
+                onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
+              />
+              <Input
+                label="공고금액(억)"
+                required
+                type="number"
+                value={form.amount_vat || ""}
+                onChange={(v) => setForm((p) => ({ ...p, amount_vat: v }))}
+              />
+              <ClientSearchInput
+                label="발주기관"
+                required
+                value={form.client}
+                onChange={(v) => setForm((p) => ({ ...p, client: v }))}
+                clients={clients}
+                onNavigateToClients={onNavigateToClients}
+              />
+              <Input
+                label="프로젝트명"
+                required
+                value={form.project}
+                onChange={(v) => setForm((p) => ({ ...p, project: v }))}
+              />
+            </div>
+            {warning && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: "10px 16px",
+                  borderRadius: 10,
+                  background: ACCENT.red + "12",
+                  border: `1px solid ${ACCENT.red}30`,
+                }}
+              >
+                <span
+                  style={{ fontSize: 13, fontWeight: 600, color: ACCENT.red }}
+                >
+                  {warning}
+                </span>
+              </div>
+            )}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 10,
+                marginTop: 24,
+              }}
+            >
+              <button
+                onClick={() => {
+                  setForm(normalizeRecord(record));
+                  setEditing(false);
+                  setWarning("");
+                }}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: 12,
+                  border: `1.5px solid ${NAVY[100]}`,
+                  background: "white",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: NAVY[400],
+                  cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={trySave}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "10px 24px",
+                  borderRadius: 12,
+                  border: "none",
+                  background: ACCENT.blue,
+                  color: "white",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <Check size={16} /> 저장
+              </button>
+            </div>
+          </>
+        ) : (
+          <div
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}
+          >
+            <Field label="제출일">
+              <FieldValue value={record.date === "사전규격" ? "사전규격" : fmtDate(record.date)} />
+            </Field>
+            <Field label="리뷰 마감">
+              <FieldValue value={record.is_close === "Y" ? "마감" : "진행중"} />
+            </Field>
+            <Field label="제안 리더">
+              <FieldValue value={record.author || "—"} />
+            </Field>
+            <Field label="총괄">
+              <FieldValue value={record.leader || "—"} />
+            </Field>
+            <Field label="투찰금액(억)">
+              <p
+                style={{
+                  fontSize: 24,
+                  fontWeight: 800,
+                  color: NAVY[700],
+                  fontFamily: "'JetBrains Mono', monospace",
+                }}
+              >
+                {fmt(record.amount)}
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: NAVY[400],
+                    marginLeft: 4,
+                  }}
+                >
+                  억
+                </span>
+              </p>
+            </Field>
+            <Field label="공고금액(억)">
+              <p
+                style={{
+                  fontSize: 24,
+                  fontWeight: 800,
+                  color: NAVY[700],
+                  fontFamily: "'JetBrains Mono', monospace",
+                }}
+              >
+                {fmt(record.amount_vat)}
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: NAVY[400],
+                    marginLeft: 4,
+                  }}
+                >
+                  억
+                </span>
+              </p>
+            </Field>
+            <Field label="발주기관">
+              <FieldValue value={record.client} />
+            </Field>
+            <Field label="프로젝트명">
+              <FieldValue value={record.project} />
+            </Field>
+          </div>
+        )}
+
+        {/* 연결된 리뷰 목록 */}
+        {(() => {
+          const linked = (reviews || []).filter((r) => String(r.id_parent) === String(record.id));
+          if (linked.length === 0) return null;
+          const reviewColor = (t) =>
+            t === "Pink" ? "#F472B6" : t === "Red" ? ACCENT.red : ACCENT.cyan;
+          return (
+            <div style={{ marginTop: 28 }}>
+              <h4
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: NAVY[500],
+                  marginBottom: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                리뷰 현황
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: ACCENT.blue,
+                    background: ACCENT.blue + "15",
+                    padding: "2px 10px",
+                    borderRadius: 10,
+                  }}
+                >
+                  {linked.length}
+                </span>
+              </h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {linked.map((rv) => (
+                  <div
+                    key={rv.id}
+                    style={{
+                      padding: "12px 16px",
+                      borderRadius: 12,
+                      border: `1px solid ${NAVY[100]}`,
+                      background: NAVY[50],
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 6,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: reviewColor(rv.type),
+                            background: reviewColor(rv.type) + "18",
+                            padding: "2px 10px",
+                            borderRadius: 8,
+                          }}
+                        >
+                          {rv.type}
+                        </span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: NAVY[700] }}>
+                          {rv.member || "—"}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 12, color: NAVY[300] }}>
+                        {fmtDate(rv.date)}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", gap: 16, fontSize: 12, color: NAVY[400] }}>
+                      <span>작성자: {rv.author || "—"}</span>
+                      <span>총괄: {rv.leader || "—"}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        {fmt(rv.amount)}억
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+    </div>
+  );
+}
+
+// ─── Review Target View (제안서 리뷰 대상) ───
+function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients, currentUser, onNavigateToClients, onReview, reviews }) {
+  const empty = {
+    date: new Date().toISOString().slice(0, 10),
+    is_close: "N",
+    author: "",
+    leader: "",
+    project: "",
+    client: "",
+    amount: "",
+    amount_vat: "",
+  };
+  const [form, setForm] = useState(empty);
+  const [showForm, setShowForm] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
+  const [formWarning, setFormWarning] = useState("");
+  const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterMonth, setFilterMonth] = useState("전체");
+  const [filterClose, setFilterClose] = useState("전체");
+
+  const selectedRecord = records.find((r) => r.id === selectedId);
+
+  const handleSubmit = () => {
+    const missing = [];
+    if (!form.date) missing.push("제출일");
+    if (!form.author || !form.author.trim()) missing.push("제안 리더");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
+    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억)");
+    if (!form.client) missing.push("발주기관");
+    if (!form.project) missing.push("프로젝트명");
+    if (missing.length > 0) {
+      setFormWarning(`${missing.join(", ")}을(를) 입력해주세요.`);
+      return;
+    }
+    setFormWarning("");
+    const month = form.date.slice(5, 7);
+    onAdd({
+      ...form,
+      amount: parseFloat(form.amount) || 0,
+      amount_vat: parseFloat(form.amount_vat) || 0,
+      month,
+      id: crypto.randomUUID(),
+    });
+    setForm(empty);
+    setShowForm(false);
+    setPage(1);
+  };
+
+  if (selectedRecord) {
+    return (
+      <div style={{ maxWidth: 720 }}>
+        <ReviewTargetDetail
+          record={selectedRecord}
+          onClose={() => setSelectedId(null)}
+          onDelete={onDelete}
+          onUpdate={(updated) => {
+            onUpdate(updated);
+            setSelectedId(null);
+          }}
+          members={members}
+          clients={clients}
+          currentUser={currentUser}
+          onNavigateToClients={onNavigateToClients}
+          onReview={onReview}
+          reviews={reviews}
+        />
+      </div>
+    );
+  }
+
+  const closeColor = (v) => v === "Y" ? ACCENT.red : ACCENT.green;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <p style={{ fontSize: 13, color: NAVY[300], marginTop: 2 }}>
+            총 {records.length}건 등록
+          </p>
+        </div>
+        {currentUser?.role !== "뷰어" && <button
+          onClick={() => setShowForm(!showForm)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "10px 20px",
+            borderRadius: 12,
+            border: "none",
+            background: NAVY[500],
+            color: "white",
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          {showForm ? <X size={16} /> : <PlusCircle size={16} />}
+          {showForm ? "닫기" : "새 건 등록"}
+        </button>}
+      </div>
+
+      {!showForm && (
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ position: "relative", flex: 1 }}>
+            <input
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
+              placeholder="프로젝트명, 발주기관 검색"
+              style={{
+                width: "100%",
+                padding: "10px 14px 10px 38px",
+                borderRadius: 12,
+                border: `1.5px solid ${NAVY[100]}`,
+                background: "white",
+                fontSize: 14,
+                color: NAVY[700],
+                boxSizing: "border-box",
+              }}
+            />
+            <svg
+              style={{
+                position: "absolute",
+                left: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+              }}
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={NAVY[300]}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            {searchTerm && (
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setPage(1);
+                }}
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: NAVY[300],
+                  padding: 4,
+                }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          <Select
+            value={filterMonth}
+            onChange={(v) => {
+              setFilterMonth(v);
+              setPage(1);
+            }}
+            options={[
+              { value: "전체", label: "제출일" },
+              ...MONTHS.map((m) => ({ value: m, label: `${m}월` })),
+              { value: "사전규격", label: "사전규격" },
+            ]}
+            style={{ minWidth: 100 }}
+          />
+          <Select
+            value={filterClose}
+            onChange={(v) => {
+              setFilterClose(v);
+              setPage(1);
+            }}
+            options={[
+              { value: "전체", label: "리뷰 마감" },
+              { value: "N", label: "진행중" },
+              { value: "Y", label: "마감" },
+            ]}
+            style={{ minWidth: 100 }}
+          />
+        </div>
+      )}
+
+      {showForm && (
+        <div
+          style={{
+            background: "white",
+            borderRadius: 16,
+            padding: 24,
+            border: `2px solid ${ACCENT.blue}30`,
+            boxShadow: `0 4px 20px ${ACCENT.blue}10`,
+          }}
+        >
+          <h4
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              color: NAVY[700],
+              marginBottom: 16,
+            }}
+          >
+            새 리뷰 대상 등록
+          </h4>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+            }}
+          >
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: NAVY[500] }}>제출일 <span style={{ color: ACCENT.red }}>*</span></span>
+                <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: NAVY[400], cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={form.date === "사전규격"}
+                    onChange={(e) => setForm((p) => ({ ...p, date: e.target.checked ? "사전규격" : new Date().toISOString().slice(0, 10) }))}
+                  />
+                  사전규격
+                </label>
+              </div>
+              {form.date === "사전규격" ? (
+                <div style={{
+                  padding: "9px 14px",
+                  borderRadius: 12,
+                  border: `1.5px solid ${NAVY[100]}`,
+                  background: NAVY[50],
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: NAVY[500],
+                }}>
+                  사전규격
+                </div>
+              ) : (
+                <Input
+                  type="date"
+                  value={form.date}
+                  onChange={(v) => setForm((p) => ({ ...p, date: v }))}
+                />
+              )}
+            </div>
+            <Select
+              label="리뷰 마감"
+              value={form.is_close || "N"}
+              onChange={(v) => setForm((p) => ({ ...p, is_close: v }))}
+              options={IS_CLOSE_OPTIONS}
+            />
+            <Input
+              label="제안 리더"
+              required
+              value={form.author || ""}
+              onChange={(v) => setForm((p) => ({ ...p, author: v }))}
+              placeholder="작성자 입력"
+            />
+            <Input
+              label="총괄"
+              value={form.leader}
+              onChange={(v) => setForm((p) => ({ ...p, leader: v }))}
+              placeholder="감리 총괄"
+            />
+            <Input
+              label="투찰금액(억)"
+              required
+              type="number"
+              value={form.amount}
+              onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
+              placeholder="0.00"
+            />
+            <Input
+              label="공고금액(억)"
+              required
+              type="number"
+              value={form.amount_vat || ""}
+              onChange={(v) => setForm((p) => ({ ...p, amount_vat: v }))}
+              placeholder="0.00"
+            />
+            <ClientSearchInput
+              label="발주기관"
+              required
+              value={form.client}
+              onChange={(v) => setForm((p) => ({ ...p, client: v }))}
+              clients={clients}
+              onNavigateToClients={onNavigateToClients}
+            />
+            <Input
+              label="프로젝트명"
+              required
+              value={form.project}
+              onChange={(v) => setForm((p) => ({ ...p, project: v }))}
+              placeholder="사업명 입력"
+            />
+          </div>
+          {formWarning && (
+            <div
+              style={{
+                marginTop: 16,
+                padding: "10px 16px",
+                borderRadius: 10,
+                background: ACCENT.red + "12",
+                border: `1px solid ${ACCENT.red}30`,
+              }}
+            >
+              <span
+                style={{ fontSize: 13, fontWeight: 600, color: ACCENT.red }}
+              >
+                {formWarning}
+              </span>
+            </div>
+          )}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 10,
+              marginTop: 20,
+            }}
+          >
+            <button
+              onClick={() => {
+                setForm(empty);
+                setShowForm(false);
+                setFormWarning("");
+              }}
+              style={{
+                padding: "10px 24px",
+                borderRadius: 12,
+                border: `1.5px solid ${NAVY[100]}`,
+                background: "white",
+                fontSize: 14,
+                fontWeight: 600,
+                color: NAVY[400],
+                cursor: "pointer",
+              }}
+            >
+              취소
+            </button>
+            <button
+              onClick={handleSubmit}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "10px 24px",
+                borderRadius: 12,
+                border: "none",
+                background: ACCENT.blue,
+                color: "white",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              <Check size={16} /> 등록
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!showForm &&
+        (() => {
+          const PAGE_SIZE = 10;
+          const monthFiltered =
+            filterMonth === "전체"
+              ? records
+              : filterMonth === "사전규격"
+                ? records.filter((r) => r.date === "사전규격")
+                : records.filter((r) => r.date !== "사전규격" && r.date?.slice(5, 7) === filterMonth);
+          const closeFiltered =
+            filterClose === "전체"
+              ? monthFiltered
+              : monthFiltered.filter((r) => (r.is_close || "N") === filterClose);
+          const term = searchTerm.trim().toLowerCase();
+          const filtered = term
+            ? closeFiltered.filter(
+                (r) =>
+                  r.project?.toLowerCase().includes(term) ||
+                  r.client?.toLowerCase().includes(term),
+              )
+            : closeFiltered;
+          const sorted = filtered.slice().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+          const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+          const safePage = Math.min(page, totalPages);
+          const paged = sorted.slice(
+            (safePage - 1) * PAGE_SIZE,
+            safePage * PAGE_SIZE,
+          );
+          return (
+            <>
+              {(term || filterMonth !== "전체" || filterClose !== "전체") && (
+                <p
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: ACCENT.blue,
+                    marginBottom: 4,
+                  }}
+                >
+                  검색결과 {sorted.length}건
+                </p>
+              )}
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {paged.map((r) => (
+                  <div
+                    key={r.id}
+                    onClick={() => setSelectedId(r.id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 16,
+                      padding: "10px 16px",
+                      background: "white",
+                      borderRadius: 14,
+                      border: `1px solid ${NAVY[50]}`,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = ACCENT.blue + "40";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = NAVY[50];
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        flex: 1,
+                        minWidth: 0,
+                      }}
+                    >
+                      <span
+                        style={{
+                          background: closeColor(r.is_close) + "18",
+                          color: closeColor(r.is_close),
+                          padding: "3px 10px",
+                          borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {r.is_close === "Y" ? "마감" : "진행중"}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: ACCENT.blue,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {r.client}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: NAVY[700],
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {r.project}
+                        {(() => {
+                          const cnt = (reviews || []).filter((rv) => String(rv.id_parent) === String(r.id)).length;
+                          return cnt > 0 ? (
+                            <span style={{ fontSize: 11, fontWeight: 600, color: ACCENT.blue, marginLeft: 4 }}>
+                              ({cnt})
+                            </span>
+                          ) : null;
+                        })()}
+                      </span>
+                    </div>
+                    <span
+                      style={{ fontSize: 12, color: NAVY[300], flexShrink: 0 }}
+                    >
+                      {r.date === "사전규격" ? "사전규격" : fmtDate(r.date)}
                     </span>
                     <p
                       style={{
@@ -8857,7 +10224,8 @@ const NAV_ITEMS = [
   { key: "teamstats", label: "팀실적", icon: TrendingUp },
   { key: "monthlystats", label: "팀 월별 실적", icon: Calendar },
   { key: "report", label: "리포트", icon: FileText },
-  { key: "review", label: "제안서 리뷰", icon: ClipboardList },
+  { key: "reviewTarget", label: "제안서 리뷰 대상", icon: ClipboardList },
+  { key: "review", label: "제안서 리뷰 현황", icon: ClipboardList },
   { key: "schedule", label: "일정", icon: Calendar },
 ];
 
@@ -8865,11 +10233,13 @@ export default function App() {
   const [authScreen, setAuthScreen] = useState("login");
   const [currentUser, setCurrentUser] = useState(null);
   const [view, setView] = useState("dashboard");
+  const [reviewPrefill, setReviewPrefill] = useState(null);
   const [records, setRecords] = useState(INITIAL_RECORDS);
   const [members, setMembers] = useState(DEFAULT_MEMBERS);
   const [clients, setClients] = useState(DEFAULT_CLIENTS);
   const [kcaData, setKcaData] = useState(DEFAULT_KCA_DATA);
   const [reviews, setReviews] = useState([]);
+  const [reviewTargets, setReviewTargets] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [filterMonth, setFilterMonth] = useState("전체");
   const [loaded, setLoaded] = useState(false);
@@ -8892,6 +10262,10 @@ export default function App() {
     () => reviews.filter((r) => r.date?.slice(0, 4) === selectedYear),
     [reviews, selectedYear],
   );
+  const yearReviewTargets = useMemo(
+    () => reviewTargets.filter((r) => r.date === "사전규격" || r.date?.slice(0, 4) === selectedYear),
+    [reviewTargets, selectedYear],
+  );
 
   useEffect(() => {
     Promise.all([
@@ -8900,13 +10274,15 @@ export default function App() {
       loadClients(),
       loadKcaTotal(),
       loadReviews(),
+      loadReviewTargets(),
       loadSchedules(),
-    ]).then(([r, m, c, k, rv, sc]) => {
+    ]).then(([r, m, c, k, rv, rt, sc]) => {
       setRecords(r);
       setMembers(m);
       setClients(c);
       setKcaData(k);
       setReviews(rv);
+      setReviewTargets(rt);
       setSchedules(sc);
       setLoaded(true);
     });
@@ -8918,6 +10294,7 @@ export default function App() {
   useEffect(() => { if (loaded) storageSet("kca-clients-v1", clients); }, [clients, loaded]);
   useEffect(() => { if (loaded) storageSet("kca-kcadata-v1", kcaData); }, [kcaData, loaded]);
   useEffect(() => { if (loaded) storageSet("kca-reviews-v1", reviews); }, [reviews, loaded]);
+  useEffect(() => { if (loaded) storageSet("kca-reviewtargets-v1", reviewTargets); }, [reviewTargets, loaded]);
   useEffect(() => { if (loaded) storageSet("kca-schedules-v1", schedules); }, [schedules, loaded]);
 
   const stats = useMemo(
@@ -9053,6 +10430,20 @@ export default function App() {
       db.upsertReviews(changed);
       return result;
     });
+
+  const addReviewTarget = (r) => {
+    setReviewTargets((prev) => [...prev, r]);
+    db.upsertReviewTarget(r);
+  };
+  const deleteReviewTarget = (id) => {
+    setReviewTargets((prev) => prev.filter((r) => r.id !== id));
+    setReviews((prev) => prev.filter((r) => r.id_parent !== String(id)));
+    db.deleteReviewTarget(id);
+  };
+  const updateReviewTarget = (updated) => {
+    setReviewTargets((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    db.upsertReviewTarget(updated);
+  };
 
   const isSettings =
     view === "team" || view === "clients" || view === "kcasetting";
@@ -9664,6 +11055,23 @@ export default function App() {
         {view === "report" && (
           <ReportView stats={stats} records={yearRecords} kcaData={kcaData} members={members} />
         )}
+        {view === "reviewTarget" && (
+          <ReviewTargetView
+            records={yearReviewTargets}
+            onAdd={addReviewTarget}
+            onDelete={deleteReviewTarget}
+            onUpdate={updateReviewTarget}
+            members={memberNames}
+            clients={clients}
+            currentUser={currentUser}
+            onNavigateToClients={() => setView("clients")}
+            onReview={(rec) => {
+              setReviewPrefill(rec);
+              setView("review");
+            }}
+            reviews={reviews}
+          />
+        )}
         {view === "review" && (
           <ReviewView
             records={yearReviews}
@@ -9674,6 +11082,8 @@ export default function App() {
             clients={clients}
             currentUser={currentUser}
             onNavigateToClients={() => setView("clients")}
+            prefill={reviewPrefill}
+            onClearPrefill={() => setReviewPrefill(null)}
           />
         )}
         {view === "schedule" && (

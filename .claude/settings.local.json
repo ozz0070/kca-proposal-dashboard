@@ -26,7 +26,12 @@
       "Bash(sed -n '6175,6181p' c:/projects/kca-proposal-dashboard/src/App.jsx)",
       "Bash(sed -n '1158,1165p' c:/projects/kca-proposal-dashboard/src/App.jsx)",
       "Bash(sed -i '6483s/task: task.trim\\(\\) || \"휴가\",/task: task.trim\\(\\),/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
-      "Bash(sed -i '6524s/task: editForm.task.trim\\(\\) || \"휴가\",/task: editForm.task.trim\\(\\),/' c:/projects/kca-proposal-dashboard/src/App.jsx)"
+      "Bash(sed -i '6524s/task: editForm.task.trim\\(\\) || \"휴가\",/task: editForm.task.trim\\(\\),/' c:/projects/kca-proposal-dashboard/src/App.jsx)",
+      "Bash(curl -s https://izulluvhrardcikepcty.supabase.co/rest/v1/reviews_targets?select=* -H 'apikey: sb_publishable_889xpcpAa4JOgHi5iF8IpA_ozEKt9RN' -H 'Authorization: Bearer sb_publishable_889xpcpAa4JOgHi5iF8IpA_ozEKt9RN')",
+      "Bash(curl -s -X DELETE https://izulluvhrardcikepcty.supabase.co/rest/v1/reviews_targets?id=eq.test-001 -H 'apikey: sb_publishable_889xpcpAa4JOgHi5iF8IpA_ozEKt9RN' -H 'Authorization: Bearer sb_publishable_889xpcpAa4JOgHi5iF8IpA_ozEKt9RN')",
+      "Bash(curl -s 'https://izulluvhrardcikepcty.supabase.co/rest/v1/reviews_targets?select=id,date,is_close&limit=3' -H 'apikey: sb_publishable_889xpcpAa4JOgHi5iF8IpA_ozEKt9RN' -H 'Authorization: Bearer sb_publishable_889xpcpAa4JOgHi5iF8IpA_ozEKt9RN')",
+      "Bash(curl -s -X POST https://izulluvhrardcikepcty.supabase.co/rest/v1/reviews_targets -H 'apikey: sb_publishable_889xpcpAa4JOgHi5iF8IpA_ozEKt9RN' -H 'Authorization: Bearer sb_publishable_889xpcpAa4JOgHi5iF8IpA_ozEKt9RN' -H 'Content-Type: application/json' -H 'Prefer: return=representation' --data-raw '{\"id\":\"_type_check_\",\"submit_date\":\"test-text\"}')",
+      "Bash(curl -s -X DELETE https://izulluvhrardcikepcty.supabase.co/rest/v1/reviews_targets?id=eq._type_check_ -H 'apikey: sb_publishable_889xpcpAa4JOgHi5iF8IpA_ozEKt9RN' -H 'Authorization: Bearer sb_publishable_889xpcpAa4JOgHi5iF8IpA_ozEKt9RN')"
     ]
   }
 }

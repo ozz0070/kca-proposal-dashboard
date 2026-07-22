@@ -153,6 +153,40 @@ export async function upsertReviews(reviews) {
   if (error) console.error("[DB] upsertReviews:", error.message);
 }
 
+// ─── Review Targets ───
+function rtRowToRecord(row) {
+  return { ...row, is_close: row.is_close ? "Y" : "N" };
+}
+function rtRecordToRow(record) {
+  return { ...record, id: String(record.id), is_close: record.is_close === "Y" };
+}
+
+export async function loadReviewTargets() {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("reviews_targets").select("*");
+  if (error) return null;
+  return data.map(rtRowToRecord);
+}
+
+export async function upsertReviewTarget(record) {
+  if (!supabase) return;
+  const { error } = await supabase.from("reviews_targets").upsert(rtRecordToRow(record), { onConflict: "id" });
+  if (error) console.error("[DB] upsertReviewTarget:", error.message);
+}
+
+export async function deleteReviewTarget(id) {
+  if (!supabase) return;
+  const { error } = await supabase.from("reviews_targets").delete().eq("id", String(id));
+  if (error) console.error("[DB] deleteReviewTarget:", error.message);
+}
+
+export async function upsertReviewTargets(records) {
+  if (!supabase || records.length === 0) return;
+  const rows = records.map(rtRecordToRow);
+  const { error } = await supabase.from("reviews_targets").upsert(rows, { onConflict: "id" });
+  if (error) console.error("[DB] upsertReviewTargets:", error.message);
+}
+
 // ─── Schedules ───
 export async function loadSchedules() {
   if (!supabase) return null;
