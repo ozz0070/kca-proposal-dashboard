@@ -7642,6 +7642,16 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
                       </span>
                       <span
                         style={{
+                          fontSize: 12,
+                          fontWeight: 500,
+                          color: NAVY[400],
+                          flexShrink: 0,
+                        }}
+                      >
+                        제안리더: {r.author || "—"}
+                      </span>
+                      <span
+                        style={{
                           fontSize: 13,
                           fontWeight: 600,
                           color: ACCENT.blue,
