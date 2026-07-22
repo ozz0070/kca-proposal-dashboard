@@ -5129,7 +5129,7 @@ function ReviewDetail({
 
   const trySave = () => {
     const missing = [];
-    if (!form.date) missing.push("날짜");
+    if (!form.date || !/^\d{4}-\d{2}-\d{2}$/.test(form.date)) missing.push("날짜");
     if (!form.member) missing.push("담당자");
     if (!form.author || !form.author.trim()) missing.push("제안 리더");
     if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
@@ -5693,7 +5693,7 @@ function ReviewDetail({
 }
 
 // ─── Review View (제안서 리뷰) ───
-function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, currentUser, onNavigateToClients, prefill, onClearPrefill }) {
+function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, currentUser, onNavigateToClients, prefill, onClearPrefill, initialSelectedId, onBack }) {
   const empty = {
     date: new Date().toISOString().slice(0, 10),
     member: currentUser?.name || "",
@@ -5707,7 +5707,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
   };
   const [form, setForm] = useState(empty);
   const [showForm, setShowForm] = useState(false);
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedId, setSelectedId] = useState(initialSelectedId || null);
   const [formWarning, setFormWarning] = useState("");
   const [page, setPage] = useState(1);
   const [copyMode, setCopyMode] = useState(false);
@@ -5717,8 +5717,8 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
   useEffect(() => {
     if (prefill) {
       setForm({
-        date: prefill.date || new Date().toISOString().slice(0, 10),
-        member: "",
+        date: "",
+        member: prefill.member || "",
         type: REVIEW_TYPES[0],
         author: prefill.author || "",
         leader: prefill.leader || "",
@@ -5740,7 +5740,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
 
   const handleSubmit = () => {
     const missing = [];
-    if (!form.date) missing.push("날짜");
+    if (!form.date || !/^\d{4}-\d{2}-\d{2}$/.test(form.date)) missing.push("날짜");
     if (!form.member) missing.push("담당자");
     if (!form.author || !form.author.trim()) missing.push("제안 리더");
     if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
@@ -5771,11 +5771,11 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
       <div style={{ maxWidth: 720 }}>
         <ReviewDetail
           record={selectedRecord}
-          onClose={() => setSelectedId(null)}
+          onClose={() => { if (onBack) { onBack(); } else { setSelectedId(null); } }}
           onDelete={onDelete}
           onUpdate={(updated) => {
             onUpdate(updated);
-            setSelectedId(null);
+            if (onBack) { onBack(); } else { setSelectedId(null); }
           }}
           members={members}
           clients={clients}
@@ -6506,6 +6506,7 @@ function ReviewTargetDetail({
   onNavigateToClients,
   onReview,
   reviews,
+  onNavigateToReview,
 }) {
   const canEdit = currentUser?.role !== "뷰어" && (currentUser?.role === "관리자");
   const [editing, setEditing] = useState(false);
@@ -6518,6 +6519,7 @@ function ReviewTargetDetail({
 
   const trySave = () => {
     const missing = [];
+    if (!form.member) missing.push("담당자");
     if (!form.date) missing.push("제출일");
     if (!form.author || !form.author.trim()) missing.push("제안 리더");
     if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
@@ -6873,6 +6875,15 @@ function ReviewTargetDetail({
                 gap: 16,
               }}
             >
+              <div style={{ gridColumn: "1 / -1" }}>
+                <Select
+                  label="담당자"
+                  required
+                  value={form.member || ""}
+                  onChange={(v) => setForm((p) => ({ ...p, member: v }))}
+                  options={members}
+                />
+              </div>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: NAVY[500] }}>제출일 <span style={{ color: ACCENT.red }}>*</span></span>
@@ -7021,6 +7032,11 @@ function ReviewTargetDetail({
           <div
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}
           >
+            <div style={{ gridColumn: "1 / -1" }}>
+              <Field label="담당자">
+                <FieldValue value={record.member || "—"} />
+              </Field>
+            </div>
             <Field label="제출일">
               <FieldValue value={record.date === "사전규격" ? "사전규격" : fmtDate(record.date)} />
             </Field>
@@ -7123,12 +7139,17 @@ function ReviewTargetDetail({
                 {linked.map((rv) => (
                   <div
                     key={rv.id}
+                    onClick={() => onNavigateToReview && onNavigateToReview(rv.id)}
                     style={{
                       padding: "12px 16px",
                       borderRadius: 12,
                       border: `1px solid ${NAVY[100]}`,
                       background: NAVY[50],
+                      cursor: "pointer",
+                      transition: "all 0.2s",
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = ACCENT.blue + "40"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = NAVY[100]; }}
                   >
                     <div
                       style={{
@@ -7178,9 +7199,10 @@ function ReviewTargetDetail({
 }
 
 // ─── Review Target View (제안서 리뷰 대상) ───
-function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients, currentUser, onNavigateToClients, onReview, reviews }) {
+function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients, currentUser, onNavigateToClients, onReview, reviews, onNavigateToReview }) {
   const empty = {
     date: new Date().toISOString().slice(0, 10),
+    member: currentUser?.name || "",
     is_close: "N",
     author: "",
     leader: "",
@@ -7202,6 +7224,7 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
 
   const handleSubmit = () => {
     const missing = [];
+    if (!form.member) missing.push("담당자");
     if (!form.date) missing.push("제출일");
     if (!form.author || !form.author.trim()) missing.push("제안 리더");
     if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
@@ -7243,6 +7266,7 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
           onNavigateToClients={onNavigateToClients}
           onReview={onReview}
           reviews={reviews}
+          onNavigateToReview={onNavigateToReview}
         />
       </div>
     );
@@ -7403,6 +7427,15 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
               gap: 16,
             }}
           >
+            <div style={{ gridColumn: "1 / -1" }}>
+              <Select
+                label="담당자"
+                required
+                value={form.member || ""}
+                onChange={(v) => setForm((p) => ({ ...p, member: v }))}
+                options={members}
+              />
+            </div>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: NAVY[500] }}>제출일 <span style={{ color: ACCENT.red }}>*</span></span>
@@ -7681,6 +7714,11 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
                         })()}
                       </span>
                     </div>
+                    <span
+                      style={{ fontSize: 12, color: NAVY[400], flexShrink: 0 }}
+                    >
+                      {r.member}
+                    </span>
                     <span
                       style={{ fontSize: 12, color: NAVY[300], flexShrink: 0 }}
                     >
@@ -10244,6 +10282,8 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [view, setView] = useState("dashboard");
   const [reviewPrefill, setReviewPrefill] = useState(null);
+  const [reviewNavId, setReviewNavId] = useState(null);
+  const [reviewBackView, setReviewBackView] = useState(null);
   const [records, setRecords] = useState(INITIAL_RECORDS);
   const [members, setMembers] = useState(DEFAULT_MEMBERS);
   const [clients, setClients] = useState(DEFAULT_CLIENTS);
@@ -11077,9 +11117,16 @@ export default function App() {
             onNavigateToClients={() => setView("clients")}
             onReview={(rec) => {
               setReviewPrefill(rec);
+              setReviewBackView(null);
+              setReviewNavId(null);
               setView("review");
             }}
             reviews={reviews}
+            onNavigateToReview={(reviewId) => {
+              setReviewNavId(reviewId);
+              setReviewBackView("reviewTarget");
+              setView("review");
+            }}
           />
         )}
         {view === "review" && (
@@ -11094,6 +11141,12 @@ export default function App() {
             onNavigateToClients={() => setView("clients")}
             prefill={reviewPrefill}
             onClearPrefill={() => setReviewPrefill(null)}
+            initialSelectedId={reviewNavId}
+            onBack={reviewBackView ? () => {
+              setReviewNavId(null);
+              setReviewBackView(null);
+              setView(reviewBackView);
+            } : null}
           />
         )}
         {view === "schedule" && (
