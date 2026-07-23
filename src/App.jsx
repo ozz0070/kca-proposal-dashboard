@@ -2988,7 +2988,7 @@ function DataEntryView({
             : statusFiltered;
           const sorted = filtered
             .slice()
-            .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+            .sort((a, b) => (b.submitDate || "").localeCompare(a.submitDate || ""));
           const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
           const safePage = Math.min(page, totalPages);
           const start = (safePage - 1) * PAGE_SIZE;
