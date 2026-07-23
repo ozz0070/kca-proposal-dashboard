@@ -7217,8 +7217,27 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
   const [searchTerm, setSearchTerm] = useState("");
   const [filterMonth, setFilterMonth] = useState("전체");
   const [filterClose, setFilterClose] = useState("전체");
+  const [showDupConfirm, setShowDupConfirm] = useState(false);
+  const [dupName, setDupName] = useState("");
 
   const selectedRecord = records.find((r) => r.id === selectedId);
+
+  const normalize = (s) => (s || "").replace(/[\s\-_]/g, "").toLowerCase();
+
+  const doAdd = () => {
+    const month = form.date === "사전규격" ? "" : form.date.slice(5, 7);
+    onAdd({
+      ...form,
+      amount: parseFloat(form.amount) || 0,
+      amount_vat: parseFloat(form.amount_vat) || 0,
+      month,
+      id: crypto.randomUUID(),
+    });
+    setForm(empty);
+    setShowForm(false);
+    setShowDupConfirm(false);
+    setPage(1);
+  };
 
   const handleSubmit = () => {
     const missing = [];
@@ -7233,17 +7252,14 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
       return;
     }
     setFormWarning("");
-    const month = form.date.slice(5, 7);
-    onAdd({
-      ...form,
-      amount: parseFloat(form.amount) || 0,
-      amount_vat: parseFloat(form.amount_vat) || 0,
-      month,
-      id: crypto.randomUUID(),
-    });
-    setForm(empty);
-    setShowForm(false);
-    setPage(1);
+    const normNew = normalize(form.project);
+    const dup = records.find((r) => normalize(r.project) === normNew);
+    if (dup) {
+      setDupName(dup.project);
+      setShowDupConfirm(true);
+      return;
+    }
+    doAdd();
   };
 
   if (selectedRecord) {
@@ -7394,6 +7410,95 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
             ]}
             style={{ minWidth: 100 }}
           />
+        </div>
+      )}
+
+      {showDupConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setShowDupConfirm(false)}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(13,32,53,0.5)",
+              backdropFilter: "blur(4px)",
+            }}
+          />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "relative",
+              background: "white",
+              borderRadius: 20,
+              padding: 32,
+              width: 440,
+              maxWidth: "90vw",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+            }}
+          >
+            <h4
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: ACCENT.amber,
+                marginBottom: 8,
+              }}
+            >
+              중복 프로젝트명
+            </h4>
+            <p style={{ fontSize: 14, color: NAVY[400], marginBottom: 8 }}>
+              동일한 프로젝트명이 이미 등록되어 있습니다.
+            </p>
+            <p style={{ fontSize: 13, fontWeight: 600, color: NAVY[700], marginBottom: 24, padding: "8px 12px", background: NAVY[50], borderRadius: 8 }}>
+              {dupName}
+            </p>
+            <p style={{ fontSize: 14, color: NAVY[400], marginBottom: 24 }}>
+              그래도 등록하시겠습니까?
+            </p>
+            <div
+              style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}
+            >
+              <button
+                onClick={() => setShowDupConfirm(false)}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: 12,
+                  border: `1.5px solid ${NAVY[100]}`,
+                  background: "white",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: NAVY[400],
+                  cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={doAdd}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: 12,
+                  border: "none",
+                  background: ACCENT.blue,
+                  color: "white",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                등록
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
