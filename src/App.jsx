@@ -2475,7 +2475,7 @@ function DataEntryView({
               setPage(1);
             }}
             options={[
-              { value: "전체", label: "전체" },
+              { value: "전체", label: "월" },
               ...MONTHS.map((m) => ({ value: m, label: `${m}월` })),
             ]}
             style={{ minWidth: 100 }}
@@ -2487,7 +2487,7 @@ function DataEntryView({
               setPage(1);
             }}
             options={[
-              { value: "전체", label: "전체" },
+              { value: "전체", label: "상태" },
               ...STATUS_OPTIONS.map((s) => ({ value: s, label: s })),
             ]}
             style={{ minWidth: 100 }}
@@ -3074,7 +3074,9 @@ function DataEntryView({
                             flexShrink: 0,
                           }}
                         >
-                          {fmtDate(r.date)}
+                          {r.submitDate === "사전공고" || !r.submitDate
+                            ? "사전공고"
+                            : fmtDate(r.submitDate)}
                         </span>
                         <span
                           style={{
@@ -3134,9 +3136,7 @@ function DataEntryView({
                             display: "inline-block",
                           }}
                         >
-                          {r.submitDate === "사전공고" || !r.submitDate
-                            ? "사전공고"
-                            : `제출일 ${fmtDate(r.submitDate)}`}
+                          {`배정일 ${fmtDate(r.date)}`}
                         </span>
                       </div>
                     </div>
@@ -5956,39 +5956,13 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
               gap: 16,
             }}
           >
-            {copyMode ? (
-              <div
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: 12,
-                  background: NAVY[50],
-                  border: `1.5px solid ${NAVY[100]}`,
-                }}
-              >
-                <label
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: NAVY[300],
-                    display: "block",
-                    marginBottom: 4,
-                  }}
-                >
-                  날짜<span style={{ color: ACCENT.red }}> *</span>
-                </label>
-                <p style={{ fontSize: 14, color: NAVY[500], fontWeight: 500 }}>
-                  {form.date}
-                </p>
-              </div>
-            ) : (
-              <Input
-                label="날짜"
-                required
-                type="date"
-                value={form.date}
-                onChange={(v) => setForm((p) => ({ ...p, date: v }))}
-              />
-            )}
+            <Input
+              label="날짜"
+              required
+              type="date"
+              value={form.date}
+              onChange={(v) => setForm((p) => ({ ...p, date: v }))}
+            />
             <Select
               label="담당자"
               required
