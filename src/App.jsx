@@ -2415,7 +2415,7 @@ function DataEntryView({
                 setSearchTerm(e.target.value);
                 setPage(1);
               }}
-              placeholder="프로젝트명, 담당자, 발주기관 검색"
+              placeholder="발주기관, 프로젝트명, 제안리더, 담당자 검색"
               style={{
                 width: "100%",
                 padding: "10px 14px 10px 38px",
@@ -3644,7 +3644,7 @@ function TeamStatsView({ records, selectedYear }) {
               setSearchTerm(e.target.value);
               setPage(1);
             }}
-            placeholder="프로젝트명, 담당자, 발주기관 검색"
+            placeholder="발주기관, 프로젝트명, 제안리더, 담당자 검색"
             style={{
               width: "100%",
               padding: "10px 14px 10px 38px",
@@ -5849,7 +5849,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                 setSearchTerm(e.target.value);
                 setPage(1);
               }}
-              placeholder="프로젝트명, 담당자, 발주기관 검색"
+              placeholder="발주기관, 프로젝트명, 제안리더, 담당자 검색"
               style={{
                 width: "100%",
                 padding: "10px 14px 10px 38px",
@@ -6217,6 +6217,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                 (r) =>
                   r.project?.toLowerCase().includes(term) ||
                   r.member?.toLowerCase().includes(term) ||
+                  r.author?.toLowerCase().includes(term) ||
                   r.client?.toLowerCase().includes(term),
               )
             : monthFiltered;
@@ -7305,7 +7306,7 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
                 setSearchTerm(e.target.value);
                 setPage(1);
               }}
-              placeholder="프로젝트명, 발주기관 검색"
+              placeholder="발주기관, 프로젝트명, 제안리더, 담당자 검색"
               style={{
                 width: "100%",
                 padding: "10px 14px 10px 38px",
@@ -7678,6 +7679,8 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
             ? closeFiltered.filter(
                 (r) =>
                   r.project?.toLowerCase().includes(term) ||
+                  r.member?.toLowerCase().includes(term) ||
+                  r.author?.toLowerCase().includes(term) ||
                   r.client?.toLowerCase().includes(term),
               )
             : closeFiltered;
