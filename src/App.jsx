@@ -6296,7 +6296,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                           flexShrink: 0,
                         }}
                       >
-                        제안리더: {r.author || "—"}
+                        {r.type === "발표" ? `총괄: ${r.leader || "—"}` : `제안리더: ${r.author || "—"}`}
                       </span>
                       <span
                         style={{
