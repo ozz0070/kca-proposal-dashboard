@@ -995,9 +995,19 @@ function DashboardView({ records, kcaData }) {
         />
         <KPICard
           icon={Building2}
-          label="팀 수주금액"
+          label="팀 수주금액(VAT 포함)"
           value={`${fmt(totalAmt)}억`}
-          sub={kcaTotal > 0 ? `제안팀 수주비율 ${pct(totalAmt, kcaTotal)}` : ""}
+          sub={
+            <>
+              {fmt(totalAmt / 1.1)} (VAT 별도)
+              {kcaTotal > 0 && (
+                <>
+                  <br />
+                  제안팀 수주비율 {pct(totalAmt, kcaTotal)}
+                </>
+              )}
+            </>
+          }
           color={ACCENT.purple}
           delay={300}
         />
@@ -1160,7 +1170,7 @@ function DashboardView({ records, kcaData }) {
                     "평가완료",
                     "수주건수",
                     "수주율",
-                    "수주금액(억)",
+                    "수주금액(억) (VAT 포함)",
                     "진행중",
                   ].map((h) => (
                     <th key={h} style={hStyle}>
@@ -1277,8 +1287,8 @@ function RecordDetail({
     if (isWonLost && !form.leader) missing.push("총괄");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
-    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
-    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억)");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억) VAT 포함");
+    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억) VAT 포함");
     if (isWonLost && (!form.submitDate || form.submitDate === "사전공고")) missing.push("제출일");
     if (missing.length > 0) {
       setWarning(`${missing.join(", ")}을(를) 입력해주세요.`);
@@ -1985,14 +1995,14 @@ function RecordDetail({
                 required
               />
               <Input
-                label="투찰금액(억)"
+                label="투찰금액(억) VAT 포함"
                 type="number"
                 value={form.amount}
                 onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
                 required
               />
               <Input
-                label="공고금액(억)"
+                label="공고금액(억) VAT 포함"
                 required
                 type="number"
                 value={form.amount_vat}
@@ -2145,7 +2155,7 @@ function RecordDetail({
               <Field label="프로젝트명">
                 <FieldValue value={record.project} />
               </Field>
-              <Field label="투찰금액(억)">
+              <Field label="투찰금액(억) VAT 포함">
                 <p
                   style={{
                     fontSize: 24,
@@ -2167,7 +2177,7 @@ function RecordDetail({
                   </span>
                 </p>
               </Field>
-              <Field label="공고금액(억)">
+              <Field label="공고금액(억) VAT 포함">
                 <p
                   style={{
                     fontSize: 24,
@@ -2308,8 +2318,8 @@ function DataEntryView({
     if (isWonLost && !form.leader) missing.push("총괄");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
-    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
-    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억)");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억) VAT 포함");
+    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억) VAT 포함");
     if (isWonLost && (!form.submitDate || form.submitDate === "사전공고")) missing.push("제출일");
     if (missing.length > 0) {
       setFormWarning(`${missing.join(", ")}을(를) 입력해주세요.`);
@@ -2749,7 +2759,7 @@ function DataEntryView({
                     marginBottom: 4,
                   }}
                 >
-                  투찰금액(억)
+                  투찰금액(억) VAT 포함
                 </label>
                 <p
                   style={{
@@ -2764,7 +2774,7 @@ function DataEntryView({
               </div>
             ) : (
               <Input
-                label="투찰금액(억)"
+                label="투찰금액(억) VAT 포함"
                 type="number"
                 value={form.amount}
                 onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
@@ -2773,7 +2783,7 @@ function DataEntryView({
               />
             )}
             <Input
-              label="공고금액(억)"
+              label="공고금액(억) VAT 포함"
               required
               type="number"
               value={form.amount_vat || ""}
@@ -3157,16 +3167,27 @@ function DataEntryView({
                           fontFamily: "'JetBrains Mono', monospace",
                         }}
                       >
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 500,
+                            color: NAVY[300],
+                            fontFamily: "'Pretendard', sans-serif",
+                            marginRight: 4,
+                          }}
+                        >
+                          투찰금액
+                        </span>
                         {fmt(r.amount)}
                         <span
                           style={{
-                            fontSize: 10,
+                            fontSize: 11,
                             fontWeight: 500,
                             color: NAVY[300],
+                            fontFamily: "'Pretendard', sans-serif",
                           }}
                         >
-                          {" "}
-                          억
+                          억 (VAT 포함)
                         </span>
                       </p>
                     </div>
@@ -3449,7 +3470,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
                 "평가완료",
                 "수주건수",
                 "수주율",
-                "수주금액(억)",
+                "수주금액(억) (VAT 포함)",
                 "진행중",
                 "취소",
               ].map((h) => (
@@ -3457,7 +3478,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
                   {h}
                 </th>
               ))}
-              {["완료", "수주건수", "수주율", "수주금액(억)", "진행중", "취소"].map(
+              {["완료", "수주건수", "수주율", "수주금액(억) (VAT 포함)", "진행중", "취소"].map(
                 (h) => (
                   <th
                     key={"p" + h}
@@ -3471,7 +3492,7 @@ function IndividualStatsView({ records, members, selectedYear }) {
                   </th>
                 ),
               )}
-              {["완료", "수주건수", "수주율", "수주금액(억)", "진행중", "취소"].map(
+              {["완료", "수주건수", "수주율", "수주금액(억) (VAT 포함)", "진행중", "취소"].map(
                 (h) => (
                   <th
                     key={"b" + h}
@@ -3731,7 +3752,7 @@ function TeamStatsView({ records, selectedYear }) {
         >
           <thead>
             <tr style={{ background: NAVY[50] }}>
-              {["사업명", "투찰금액(억)", "유형", "상태", "배정일", "제출일"].map(
+              {["사업명", "투찰금액(억) (VAT 포함)", "유형", "상태", "배정일", "제출일"].map(
                 (h) => (
                   <th
                     key={h}
@@ -4131,7 +4152,7 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
                 "평가완료",
                 "수주건수",
                 "수주율",
-                "수주금액(억)",
+                "수주금액(억) (VAT 포함)",
                 "진행중",
                 "취소",
               ].map((h) => (
@@ -4139,7 +4160,7 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
                   {h}
                 </th>
               ))}
-              {["완료", "수주건수", "수주율", "수주금액(억)", "진행중", "취소"].map(
+              {["완료", "수주건수", "수주율", "수주금액(억) (VAT 포함)", "진행중", "취소"].map(
                 (h) => (
                   <th
                     key={"p" + h}
@@ -4153,7 +4174,7 @@ function MonthlyStatsView({ records, kcaData, selectedYear }) {
                   </th>
                 ),
               )}
-              {["완료", "수주건수", "수주율", "수주금액(억)", "진행중", "취소"].map(
+              {["완료", "수주건수", "수주율", "수주금액(억) (VAT 포함)", "진행중", "취소"].map(
                 (h) => (
                   <th
                     key={"b" + h}
@@ -4378,7 +4399,12 @@ function ReportView({ stats, records, kcaData, members }) {
                   : "N/A",
               unit: totalDone > 0 ? "%" : "",
             },
-            { label: "팀 수주금액", value: fmt(totalAmt), unit: "억" },
+            {
+              label: "팀 수주금액(VAT 포함)",
+              value: fmt(totalAmt),
+              unit: "억",
+              sub: `${fmt(totalAmt / 1.1)} (VAT 별도)`,
+            },
           ].map((k, i) => (
             <div
               key={i}
@@ -4410,6 +4436,18 @@ function ReportView({ stats, records, kcaData, members }) {
                 {k.value}
                 <span style={{ fontSize: 14, fontWeight: 500 }}>{k.unit}</span>
               </p>
+              {k.sub && (
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: NAVY[400],
+                    fontWeight: 500,
+                    marginTop: 4,
+                  }}
+                >
+                  {k.sub}
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -4445,7 +4483,7 @@ function ReportView({ stats, records, kcaData, members }) {
               <th style={rthStyle}>평가완료</th>
               <th style={rthStyle}>수주</th>
               <th style={rthStyle}>수주율</th>
-              <th style={rthStyle}>수주금액(억)</th>
+              <th style={rthStyle}>수주금액(억) (VAT 포함)</th>
               <th style={rthStyle}>진행중</th>
               {hasCancel && <th style={rthStyle}>취소</th>}
             </tr>
@@ -4511,7 +4549,7 @@ function ReportView({ stats, records, kcaData, members }) {
         >
           <thead>
             <tr>
-              {["프로젝트명", "발주기관", "담당자", "유형", "투찰금액(억)"].map(
+              {["프로젝트명", "발주기관", "담당자", "유형", "투찰금액(억) (VAT 포함)"].map(
                 (h) => (
                   <th key={h} style={rthStyle}>
                     {h}
@@ -5132,8 +5170,8 @@ function ReviewDetail({
     if (!form.date || !/^\d{4}-\d{2}-\d{2}$/.test(form.date)) missing.push("날짜");
     if (!form.member) missing.push("담당자");
     if (!form.author || !form.author.trim()) missing.push("제안 리더");
-    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
-    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억)");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억) VAT 포함");
+    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억) VAT 포함");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
     if (missing.length > 0) {
@@ -5522,14 +5560,14 @@ function ReviewDetail({
                 placeholder="감리 총괄"
               />
               <Input
-                label="투찰금액(억)"
+                label="투찰금액(억) VAT 포함"
                 required
                 type="number"
                 value={form.amount}
                 onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
               />
               <Input
-                label="공고금액(억)"
+                label="공고금액(억) VAT 포함"
                 required
                 type="number"
                 value={form.amount_vat || ""}
@@ -5635,7 +5673,7 @@ function ReviewDetail({
             <Field label="총괄">
               <FieldValue value={record.leader || "—"} />
             </Field>
-            <Field label="투찰금액(억)">
+            <Field label="투찰금액(억) VAT 포함">
               <p
                 style={{
                   fontSize: 24,
@@ -5657,7 +5695,7 @@ function ReviewDetail({
                 </span>
               </p>
             </Field>
-            <Field label="공고금액(억)">
+            <Field label="공고금액(억) VAT 포함">
               <p
                 style={{
                   fontSize: 24,
@@ -5743,8 +5781,8 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
     if (!form.date || !/^\d{4}-\d{2}-\d{2}$/.test(form.date)) missing.push("날짜");
     if (!form.member) missing.push("담당자");
     if (!form.author || !form.author.trim()) missing.push("제안 리더");
-    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
-    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억)");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억) VAT 포함");
+    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억) VAT 포함");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
     if (missing.length > 0) {
@@ -6038,7 +6076,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
                     marginBottom: 4,
                   }}
                 >
-                  투찰금액(억)<span style={{ color: ACCENT.red }}> *</span>
+                  투찰금액(억) VAT 포함<span style={{ color: ACCENT.red }}> *</span>
                 </label>
                 <p
                   style={{
@@ -6053,7 +6091,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
               </div>
             ) : (
               <Input
-                label="투찰금액(억)"
+                label="투찰금액(억) VAT 포함"
                 required
                 type="number"
                 value={form.amount}
@@ -6062,7 +6100,7 @@ function ReviewView({ records, onAdd, onDelete, onUpdate, members, clients, curr
               />
             )}
             <Input
-              label="공고금액(억)"
+              label="공고금액(억) VAT 포함"
               required
               type="number"
               value={form.amount_vat || ""}
@@ -6496,8 +6534,8 @@ function ReviewTargetDetail({
     const missing = [];
     if (!form.date) missing.push("제출일");
     if (!form.author || !form.author.trim()) missing.push("제안 리더");
-    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
-    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억)");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억) VAT 포함");
+    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억) VAT 포함");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
     if (missing.length > 0) {
@@ -6909,14 +6947,14 @@ function ReviewTargetDetail({
                 placeholder="감리 총괄"
               />
               <Input
-                label="투찰금액(억)"
+                label="투찰금액(억) VAT 포함"
                 required
                 type="number"
                 value={form.amount}
                 onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
               />
               <Input
-                label="공고금액(억)"
+                label="공고금액(억) VAT 포함"
                 required
                 type="number"
                 value={form.amount_vat || ""}
@@ -7022,7 +7060,7 @@ function ReviewTargetDetail({
             <Field label="총괄">
               <FieldValue value={record.leader || "—"} />
             </Field>
-            <Field label="투찰금액(억)">
+            <Field label="투찰금액(억) VAT 포함">
               <p
                 style={{
                   fontSize: 24,
@@ -7044,7 +7082,7 @@ function ReviewTargetDetail({
                 </span>
               </p>
             </Field>
-            <Field label="공고금액(억)">
+            <Field label="공고금액(억) VAT 포함">
               <p
                 style={{
                   fontSize: 24,
@@ -7218,8 +7256,8 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
     const missing = [];
     if (!form.date) missing.push("제출일");
     if (!form.author || !form.author.trim()) missing.push("제안 리더");
-    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억)");
-    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억)");
+    if (!form.amount && form.amount !== 0) missing.push("투찰금액(억) VAT 포함");
+    if (!form.amount_vat && form.amount_vat !== 0) missing.push("공고금액(억) VAT 포함");
     if (!form.client) missing.push("발주기관");
     if (!form.project) missing.push("프로젝트명");
     if (missing.length > 0) {
@@ -7564,7 +7602,7 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
               placeholder="감리 총괄"
             />
             <Input
-              label="투찰금액(억)"
+              label="투찰금액(억) VAT 포함"
               required
               type="number"
               value={form.amount}
@@ -7572,7 +7610,7 @@ function ReviewTargetView({ records, onAdd, onDelete, onUpdate, members, clients
               placeholder="0.00"
             />
             <Input
-              label="공고금액(억)"
+              label="공고금액(억) VAT 포함"
               required
               type="number"
               value={form.amount_vat || ""}
